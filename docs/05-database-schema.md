@@ -288,7 +288,48 @@ trip_plans (id, user_id FK, source enum('ai','manual'), title, destination,
        pdf_key, quotation_id FK NULL)
 ```
 
-## 5.12 Settings & system
+## 5.12 Automation, exceptions & document AI
+
+```sql
+exceptions (id, type enum('payment_unmatched','payment_failed','supplier_error',
+       'ocr_low_confidence','passport_risk','visa_risk','doc_unclassifiable',
+       'refund_dispute','medical_case','sentiment_alert','sla_breach_risk','fulfillment_manual'),
+       severity enum('low','normal','high','critical'),
+       entity_type, entity_id,                     -- booking_item, payment, visa_application…
+       context jsonb,                              -- auto-attached evidence (OCR diff, supplier payload…)
+       suggested_actions jsonb,                    -- one-click resolutions offered to staff
+       routed_role_id FK roles, assigned_to FK users NULL,
+       status enum('open','in_progress','waiting_customer','resolved','escalated'),
+       sla_due_at, escalated_at, resolution_action, resolution_note, resolved_by, resolved_at)
+       -- resolving an exception resumes the bound state machine automatically
+
+automation_settings (workflow_key PK,              -- flight_issue, quote_send, transfer_confirm…
+       level enum('A0','A1','A2','A3'), params jsonb,   -- ceilings, hold minutes, veto windows
+       updated_by, updated_at)                     -- versioned via audit_logs
+
+automation_rules (id, name, trigger_event,         -- ECA rules: notifications, escalations, guards
+       conditions jsonb, actions jsonb, enabled bool, test_mode bool,
+       created_by, version int)
+
+payment_references (id, booking_id FK, reference varchar(12) UNIQUE,  -- printed on transfer order
+       expected_amount, currency, status enum('awaiting','matched','partial','expired'))
+
+ocr_extractions (id, user_document_id FK, engine, kind enum('passport_mrz','receipt','generic_doc'),
+       fields jsonb,                               -- extracted values + per-field confidence
+       overall_confidence numeric(4,3), checksum_ok bool NULL,
+       outcome enum('auto_accepted','corrected','exception'), corrected_by NULL)
+
+doc_precheck_results (id, visa_application_document_id FK,
+       checks jsonb,                               -- {readable:ok, type_match:ok, months_covered:2/3…}
+       verdict enum('pass','needs_correction','uncertain'),
+       reason_ar, reason_en, model, created_at)
+
+-- visa_applications gains: readiness_score int, score_breakdown jsonb, last_chase_at
+-- notifications engine rules live in automation_rules (trigger_event = state change / schedule)
+-- ops metrics view: touchless_rate, exceptions_per_100, median_resolution_minutes (materialized)
+```
+
+## 5.13 Settings & system
 
 ```sql
 settings (key PK, value jsonb, updated_by)        -- fees, bank accounts, SLA hours, feature flags
@@ -297,10 +338,11 @@ faq_articles (id, category, question_ar/-en, answer_ar/-en, embedding vector NUL
 banners (id, placement, image_key, title_ar/-en, link, active, sort)
 ```
 
-## 5.13 Indexing & integrity highlights
+## 5.14 Indexing & integrity highlights
 
 - `bookings(reference)`, `bookings(customer_id, status)`, `booking_items(booking_id)`, `payments(booking_id, status)`, `whatsapp_threads(wa_phone)`, `notifications(user_id, read_at)`.
-- Partial index for operational queues: `booking_items(status) WHERE status IN ('processing','waiting_supplier','requires_action')`.
+- Partial index for operational queues: `booking_items(status) WHERE status IN ('processing','waiting_supplier','requires_action')`; exception work surface: `exceptions(routed_role_id, status, sla_due_at) WHERE status IN ('open','in_progress')`.
+- Integrity: `requires_action` requires an open `exceptions` row (enforced in service layer + periodic consistency check); `payment_references.reference` generated collision-free (base32, no ambiguous chars).
 - `CHECK (passport_expiry_date > passport_issue_date)`; app-level rule warns when expiry < return date + 6 months.
 - Ledger invariant: `balance_after` maintained in a transaction with `SELECT … FOR UPDATE` on the wallet row; wallet balance never derived from anything but the ledger.
 - Row-level security (or strict service-layer scoping) so agents/companies only see their own bookings.

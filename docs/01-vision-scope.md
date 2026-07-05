@@ -8,9 +8,9 @@ Build the **best smart travel platform for Libya**: a full digital travel agency
 
 | We are | We are not |
 |---|---|
-| A full-service digital travel agency with operational control | A price-comparison meta-search |
+| A full-service digital travel platform with operational control | A price-comparison meta-search |
 | Arabic-first, built around how Libyans actually book travel | A translated clone of a Western OTA |
-| A hybrid of automation + human fulfillment | A fully automated self-service engine (at launch) |
+| An **automation-first travel operating system** — machine-handled by default, humans on exceptions | A staff-driven back office with an app on top |
 | A visa/document preparation partner | A visa guarantee service or law firm |
 | A medical travel *organizer* (logistics only) | A medical advice or diagnosis provider |
 
@@ -26,7 +26,7 @@ Build the **best smart travel platform for Libya**: a full digital travel agency
 3. **Complete packages** — flight + hotel + pickup + eSIM + insurance + visa support in one quotation PDF.
 4. **AI trip planning in Arabic** — natural-language planning connected to real inventory and quotation flows.
 5. **Serves every segment from one core** — B2C, medical, students, corporate, and B2B agents share the same booking engine and admin operation.
-6. **Semi-manual first, API-automated later** — launch without GDS dependency; the system tracks everything professionally while staff fulfill manually, then suppliers are plugged in without changing the customer experience.
+6. **Automation-first from day one** — the default path of every workflow is machine-handled (AI quotations, OCR, auto-matched payments, auto-dispatched documents); where a supplier API isn't live yet, the manual adapter raises a tracked exception instead of making staff the default. Suppliers plug in later without changing the customer experience. See [12-automation-first.md](12-automation-first.md).
 
 ## Guiding product principles
 
@@ -36,6 +36,7 @@ Build the **best smart travel platform for Libya**: a full digital travel agency
 4. **Prices are honest.** Show base price, service fee, and total. Say "estimated" when not confirmed.
 5. **Status is always visible.** Every request has a clear status the customer can check without asking.
 6. **The AI assists, never guarantees.** Estimated prices labeled, no legal/medical/visa guarantees, human handoff for sensitive cases.
+7. **Automate the path, humanize the exception.** Every workflow ships with a fully automated green path; humans intervene only through the typed Exception Queue — and those interventions are measured and automated away over time.
 
 ## Brand personality
 

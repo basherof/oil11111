@@ -2,9 +2,9 @@
 
 **Working brand name:** *Rihlati* ("My Journey" — رحلتي). Placeholder — final name subject to trademark check in Libya.
 
-A complete digital travel agency for the Libyan market: flights, hotels, visas, travel packages, medical travel, business/exhibition travel, eSIM, insurance, airport pickup — with an AI travel assistant, deep WhatsApp integration, and local payment support. Arabic-first, fully bilingual (AR RTL / EN LTR).
+A complete **automation-first travel operating system** for the Libyan market: flights, hotels, visas, travel packages, medical travel, business/exhibition travel, eSIM, insurance, airport pickup — with an AI travel assistant, deep WhatsApp integration, and local payment support. Arabic-first, fully bilingual (AR RTL / EN LTR).
 
-> The goal is not another booking app. It is a **travel ecosystem** that helps a Libyan traveler plan, book, document, pay for, and complete an entire trip — with human support one tap away.
+> The goal is not another booking app. It is a **travel ecosystem** that helps a Libyan traveler plan, book, document, pay for, and complete an entire trip — self-service and machine-handled by default, with humans stepping in only for exceptions, and human support always one tap away.
 
 ---
 
@@ -23,6 +23,7 @@ A complete digital travel agency for the Libyan market: flights, hotels, visas, 
 | [`docs/09-timeline-cost.md`](docs/09-timeline-cost.md) | Development timeline, team plan, cost estimate |
 | [`docs/10-recommendations.md`](docs/10-recommendations.md) | Suggestions to improve the idea further |
 | [`docs/11-ai-assistant.md`](docs/11-ai-assistant.md) | AI travel assistant / trip builder / quotation generator design |
+| [`docs/12-automation-first.md`](docs/12-automation-first.md) | ⭐ **Automation-first operating model** — green path, exception queue, OCR, no-code controls |
 | [`design/design-system.md`](design/design-system.md) | Brand, colors, typography, components, RTL rules |
 | [`design/user-flows.md`](design/user-flows.md) | App flow diagrams (Mermaid — renders on GitHub) |
 | [`design/wireframes/mobile-app.html`](design/wireframes/mobile-app.html) | Mobile app wireframes — 16 key screens, AR/EN |
@@ -33,19 +34,19 @@ Open the wireframe HTML files in any browser — they are self-contained (no bui
 
 ## 🚀 The one-paragraph pitch
 
-Libyan travelers today book trips through WhatsApp messages to travel offices, with no visibility into prices, documents, or booking status. Rihlati digitizes the entire travel-office experience — search, quotation, visa checklist, document upload, payment tracking, ticket delivery — while keeping the human, WhatsApp-centered service Libyans trust. It serves individuals, families, medical travelers, students, business travelers, corporations, and travel agents from one platform, and its AI assistant plans complete trips in Arabic.
+Libyan travelers today book trips through WhatsApp messages to travel offices, with no visibility into prices, documents, or booking status. Rihlati turns that into a self-service, AI-powered operating system: search, instant AI quotations, passport scanning (OCR), visa readiness scoring, automated payments, automatic ticket/voucher delivery to an offline Trip Wallet — while keeping the human, WhatsApp-centered service Libyans trust for the moments that need people. Normal bookings run **touchless**; staff work a single exception queue (failed payments, supplier errors, unclear passports, visa risks, refunds, medical cases, complaints). It serves individuals, families, medical travelers, students, business travelers, corporations, and travel agents from one platform, and its AI assistant plans complete trips in Arabic.
 
-## 🧭 First release (MVP) focus
+## 🧭 First release (MVP) focus — automation-first
 
 1. Professional user app (Flutter) + website (Next.js)
-2. Admin dashboard with full booking lifecycle
-3. Booking *request* flow (semi-manual fulfillment — no GDS dependency at launch)
-4. AI trip planner (basic) + AI quotation generator for staff
-5. Visa checklists + document upload + review workflow
-6. Branded PDF quotations, tickets, vouchers (AR/EN)
-7. WhatsApp Business API integration
-8. Payment tracking (cash, bank transfer, wallet) with manual confirmation
-9. User profiles + saved travelers (family passports)
-10. Support ticket system
+2. Admin dashboard built around the **Exception Queue** (staff touch exceptions, not bookings)
+3. Automated booking pipeline on a system-driven **state machine** (manual supplier adapter = exception path, not staff default)
+4. AI trip planner (bookable output) + **automated quotations** (AI-drafted, instant where priceable)
+5. **Passport OCR** + document AI classification
+6. Visa checklists with **readiness score**, AI pre-check, and automated chasing
+7. Branded PDF generation, auto-dispatched (AR/EN) + offline **Trip Wallet**
+8. WhatsApp Business API — automated outbound on every state change
+9. **Payment automation**: unique transfer references, receipt OCR auto-matching, wallet; gateway in Phase 2
+10. User profiles + saved travelers (family passports), smart notifications engine, support tickets, **no-code admin controls** (fees, templates, checklists, automation levels)
 
 See [docs/03-features-by-phase.md](docs/03-features-by-phase.md) for the complete phased plan.

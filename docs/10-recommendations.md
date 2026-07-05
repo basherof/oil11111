@@ -2,6 +2,8 @@
 
 The brief is already strong. These recommendations sharpen it commercially and operationally.
 
+> **Update:** several items below graduated from "suggestion" to **core platform design** in the automation-first upgrade ([12-automation-first.md](12-automation-first.md)): #5 Trip Wallet, #7 visa readiness score, #9 deposit schedules, #18 AI document pre-check + passport MRZ auto-extraction, #19 SLAs (now exception-queue SLA timers). They remain listed for traceability.
+
 ## 10.1 Strategy & sequencing
 
 1. **Launch as "the visa & trip preparation app", not "the booking app."** Flight prices are a commodity; document/visa pain is Libya's real unsolved problem and your defensible wedge. Booking follows naturally once trust is earned.

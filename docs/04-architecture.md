@@ -19,6 +19,9 @@ flowchart TB
     subgraph Core["Core Backend (NestJS modular monolith)"]
         AUTHM[Auth & Identity<br/>OTP · JWT · 2FA · RBAC]
         BOOK[Booking Engine<br/>unified booking + items + status machine]
+        AUTO[Automation Engine<br/>rules · timers · A0–A3 levels]
+        EXC[Exception Queue<br/>typed · routed · SLA-timed]
+        OCR[Document AI<br/>passport MRZ/OCR · classification · pre-check]
         CAT[Catalog<br/>packages · destinations · exhibitions · visas]
         PAY[Payments & Wallet<br/>ledger · invoices · receipts]
         DOC[Documents<br/>upload · review states · secure storage]
@@ -56,6 +59,9 @@ flowchart TB
     end
 
     Clients --> GW --> Core
+    AUTO --> BOOK & PAY & NOTIF & PDF
+    AUTO -->|failure modes| EXC
+    OCR --> DOC & BOOK
     Core <--> Q
     SCHED --> Q
     Core --> PG & REDIS & S3 & SEARCH
@@ -75,8 +81,11 @@ flowchart TB
 |---|---|---|
 | Backend shape | **Modular monolith** (NestJS), module-per-domain, extractable later | Small team, fast iteration, one deployment; clean module boundaries allow extracting AI/PDF/notifications into services when scale demands |
 | Booking model | **Unified `bookings` + polymorphic `booking_items`** | Flights, hotels, visas, eSIM, transfers, packages all share one lifecycle, one payment ledger, one PDF/notification pipeline |
-| Fulfillment | **Supplier-adapter pattern** | `ManualFulfillment` adapter in MVP; `DuffelAdapter`, `RateHawkAdapter`, `AiraloAdapter` plug into the same interface in Phase 2 — no dependency on a single supplier |
-| Status handling | **Explicit state machine** per booking item with audit trail | The user requirement "status is always visible/truthful" demands guarded transitions + `status_history` |
+| Operating model | **Automation-first**: green path fully machine-driven; failures become typed exceptions | Staff work one Exception Queue instead of processing bookings; see [12-automation-first.md](12-automation-first.md) |
+| Fulfillment | **Supplier-adapter pattern** with health checks + failover chains | `ManualFulfillment` adapter is *exception-generating* in MVP; `DuffelAdapter`, `RateHawkAdapter`, `AiraloAdapter` plug into the same interface in Phase 2 — no dependency on a single supplier |
+| Status handling | **Explicit state machine** per booking item, transitions driven by `system` actor by default, with timers and audit trail | "Status is always visible/truthful" + automation demands guarded transitions, timeouts, and `status_history` |
+| Automation control | Declarative rules + per-workflow **A0–A3 levels stored as settings** | Ops can ratchet automation up (or hit kill switches) without deployments |
+| Document intake | Central **Document AI** service (MRZ/OCR, classification, visa pre-check) | One engine serves passenger forms, visa files, receipts, and WhatsApp media; confidence thresholds route to exceptions |
 | Money | **Double-entry ledger** (`ledger_entries`) for wallets, agent balances, commissions | Cash/transfer/wallet mixes and agent credit limits need auditable accounting from day one |
 | i18n | Locale in every content table (`_ar` / `_en` columns or translation table); ICU messages in clients | Arabic-first requirement; PDFs and WhatsApp templates also templated per locale |
 | Files | Pre-signed S3 URLs, private buckets, AV scan on upload | Passports and medical reports are highly sensitive |
@@ -106,35 +115,37 @@ stateDiagram-v2
     completed --> [*]
 ```
 
-Rules: transitions only via service layer (never raw updates); each transition writes `status_history` (who, when, note) and fires notification events.
+Rules: transitions only via service layer (never raw updates); the default actor is **`system`** (automation engine, timers, webhooks); each transition writes `status_history` (who, when, note) and fires notification events. Timers: `pending_payment` auto-expires; `waiting_supplier` auto-escalates to a `supplier_error` exception; `confirmed → completed` at trip end. `requires_action` can only be entered with a bound exception record, and resolving that exception resumes the flow automatically.
 
-## 4.4 Request flow — MVP semi-manual flight booking
+## 4.4 Request flow — automated green path (MVP)
 
 ```mermaid
 sequenceDiagram
     actor C as Customer (app)
-    participant API as Backend
-    participant A as Admin staff
+    participant API as Backend (automation engine)
+    participant SUP as Supplier adapter
+    participant EX as Exception queue
     participant WA as WhatsApp API
 
-    C->>API: Flight search (route, dates, pax)
-    API-->>C: Results (cached fares / on-request)
-    C->>API: Submit request + passengers + payment method
-    API->>API: Passport expiry check → warning
-    API-->>C: Booking ref, status=pending_payment
-    API->>WA: "Request received" message
-    C->>API: Upload bank transfer receipt
-    A->>API: Finance confirms payment → payment_received
-    A->>API: Issues ticket at supplier, uploads e-ticket PDF
-    API->>API: status=ticket_issued, generate branded PDF
-    par deliver
-        API->>C: Push notification + in-app trip
-        API->>WA: PDF ticket via WhatsApp
-        API->>C: Email confirmation
+    C->>API: Flight search → select fare
+    API->>SUP: price(offer) — reprice
+    C->>API: Scan passports 📷 (OCR auto-fill) + confirm
+    API->>API: Expiry rule check ✓
+    API-->>C: Booking ref + unique payment reference
+    C->>API: Upload transfer receipt (or wallet/gateway)
+    API->>API: Receipt OCR → auto-match → hold → payment_received
+    API->>SUP: book() + issue()
+    SUP-->>API: PNR + tickets
+    API->>API: ticket_issued → branded PDF
+    par instant delivery
+        API->>C: Push + Trip Wallet (offline)
+        API->>WA: PDF ticket template
+        API->>C: Email
     end
+    Note over API,EX: Any failing step → typed exception (payment_unmatched,<br/>supplier_error, ocr_low_confidence…) → routed to role, SLA-timed.
 ```
 
-Phase 2 replaces the two staff steps with supplier-adapter API calls; everything else is unchanged.
+Zero staff touches on the green path. In MVP the `manual` supplier adapter fulfills `book()/issue()` by opening a fulfillment exception for staff — same interface, so switching to Duffel/RateHawk in Phase 2 is a feature-flag change. Full model: [12-automation-first.md](12-automation-first.md).
 
 ## 4.5 AI orchestrator (summary — full design in [11-ai-assistant.md](11-ai-assistant.md))
 

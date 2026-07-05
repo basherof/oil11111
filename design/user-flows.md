@@ -34,35 +34,45 @@ flowchart TD
     PROF --> SAVED[Saved travelers] & DOCS[My documents] & LOY[Loyalty] & PAYH[Payment history] & SET[Settings]
 ```
 
-## 2. Flight booking flow (MVP)
+## 2. Flight booking flow — automated green path
 
 ```mermaid
 flowchart TD
     S[Search form<br/>route · dates · pax · class · preferences] --> R[Results + filters + labels]
-    R --> D[Flight details<br/>segments · baggage · fare rules · fees]
-    D --> PAX[Passenger details<br/>saved travelers or manual entry]
-    PAX --> CHK{Passport valid<br/>6+ months after return?}
+    R --> D[Flight details<br/>segments · baggage · fare rules · fees<br/>auto-reprice before checkout]
+    D --> PAX[Passenger details<br/>📷 scan passport → OCR auto-fill<br/>or pick saved travelers]
+    PAX --> OCRC{OCR confidence ≥ 90%<br/>+ MRZ checksum?}
+    OCRC -->|No| EXC1[⚠ exception: ocr_low_confidence<br/>ask better photo / staff correct]
+    OCRC -->|Yes| CHK{Passport valid<br/>6+ months after return?}
     CHK -->|No| WARN[⚠ Expiry warning<br/>continue or fix] --> PAY
-    CHK -->|Yes| PAY[Payment method<br/>cash · transfer · wallet]
-    PAY -->|Bank transfer| RCPT[Upload receipt] --> PEND[Status: pending payment]
-    PAY -->|Cash| PEND
-    PAY -->|Wallet| CONF
-    PEND --> FIN[Finance confirms] --> CONF[Payment received]
-    CONF --> STAFF[Staff issue ticket<br/>P2: API auto-issue] --> TKT[Ticket issued]
-    TKT --> OUT[PDF in app + WhatsApp + email<br/>trip added to My Trips]
+    CHK -->|Yes| PAY[Payment<br/>transfer w/ unique reference · wallet · gateway · cash]
+    PAY -->|Transfer| RCPT[Upload receipt → OCR auto-match] --> HOLD{Matched?}
+    HOLD -->|Yes, after hold| CONF[Payment received — auto]
+    HOLD -->|No| EXC2[⚠ exception: payment_unmatched<br/>→ Finance]
+    PAY -->|Wallet / gateway| CONF
+    PAY -->|Cash| OFFICE[Office records] --> CONF
+    CONF --> SUP[Supplier adapter book + issue<br/>manual adapter = fulfillment exception in MVP]
+    SUP -->|OK| TKT[Ticket issued — auto PDF]
+    SUP -->|Fail| EXC3[⚠ exception: supplier_error<br/>alternatives pre-searched]
+    TKT --> OUT[Trip Wallet offline + WhatsApp PDF + email<br/>zero staff touches]
+    EXC1 & EXC2 & EXC3 -.resolved.-> RESUME[State machine resumes]
 ```
 
-## 3. Visa application flow
+## 3. Visa application flow — AI pre-check + readiness score
 
 ```mermaid
 flowchart TD
     VS[Visa section] --> VC[Country + visa type page<br/>requirements · warnings · processing time]
-    VC --> START[Start application] --> CL[Auto-generated checklist]
+    VC --> START[Start application] --> CL[Auto-generated checklist<br/>readiness score 0%]
     CL --> UP[Upload documents<br/>app · web · WhatsApp]
-    UP --> REV{Staff review per document}
-    REV -->|needs correction / missing| NOTIF[Notify customer<br/>push + WhatsApp] --> UP
-    REV -->|all accepted| SUB[File submitted / appointment set]
-    SUB --> APPT[Appointment reminder] --> DEC{Decision}
+    UP --> AI{AI pre-check<br/>type? readable? dates? spec?}
+    AI -->|pass| ACC[Auto-accepted → score rises]
+    AI -->|fail| CORR[Auto: needs correction<br/>AR/EN reason → push + WhatsApp] --> UP
+    AI -->|uncertain| OFF[Visa officer reviews<br/>exception item]
+    ACC --> SCORE{Score = 100%<br/>hard-fails clear?}
+    SCORE -->|No, aging| CHASE[Automated chasing<br/>D+1 · D+3 · appt−7] --> UP
+    SCORE -->|Yes| SIGN[Officer sign-off — A1 by design] --> SUB[File submitted / appointment set]
+    SUB --> APPT[Appointment reminders D-7 · D-1] --> DEC{Decision}
     DEC -->|Approved| DONE[🎉 + trip planning offer]
     DEC -->|Rejected| SUPRT[Support consultation offer]
 ```
@@ -104,7 +114,19 @@ flowchart TD
     BK --> INV[Monthly consolidated invoice] --> RPT[Department spending reports]
 ```
 
-## 7. Agent booking flow
+## 7. Exception queue — the only staff work surface
+
+```mermaid
+flowchart TD
+    FAIL[Any automation failure<br/>payment · supplier · OCR · visa risk · sentiment] --> TYPE[Typed exception created<br/>context + suggested actions attached]
+    TYPE --> ROUTE[Auto-route to role<br/>round-robin + load balance] --> SLA[SLA timer starts]
+    SLA --> WORK[Staff one-click resolution<br/>match · rebook · correct · approve · take over]
+    SLA -->|80% of SLA| ESC[Escalate to team lead]
+    WORK --> RESUME[Bound state machine resumes automatically]
+    WORK --> LEARN[Weekly: top exception causes<br/>→ automation backlog]
+```
+
+## 8. Agent booking flow
 
 ```mermaid
 flowchart TD

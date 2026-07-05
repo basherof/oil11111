@@ -33,7 +33,7 @@ Phase 4 Smart                                     ░█████████
 
 | Phase | Duration | Calendar | Exit milestone |
 |---|---|---|---|
-| **P1 — MVP** | **5–6 months** | M1–M6 | Public launch: request-based booking, visa module, WhatsApp, PDFs, payments (manual), basic AI planner. Includes 3–4 week closed pilot with one travel office + ~50 real customers |
+| **P1 — MVP** | **5–6 months** (automation-first scope: +2–3 weeks for OCR + exception queue, reallocated from staff-workflow UI) | M1–M6 | Public launch: automated booking pipeline + exception queue, passport OCR, visa readiness score with AI pre-check, WhatsApp outbound automation, auto-dispatched PDFs + Trip Wallet, payment auto-matching, AI planner + AI-drafted quotations, no-code controls v1. Includes 3–4 week closed pilot with one travel office + ~50 real customers |
 | **P2 — Automation** | 3–4 months | M6–M10 | Live flight/hotel APIs, gateway payments, wallet, eSIM, full notifications |
 | **P3 — B2B** | 3 months | M10–M13 | Agent + corporate dashboards, commissions, monthly invoicing, loyalty basic |
 | **P4 — Smart** | 3–4 months | M13–M17 | Full AI assistant, dynamic packages, loyalty tiers, flight tracking, advanced analytics |

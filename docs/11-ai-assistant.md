@@ -36,7 +36,7 @@ flowchart LR
    - Day-by-day mini program · Estimated total + per person
    - Included ✓ / Not included ✗ lists · destination image strip
    - Buttons: **Request official quotation** · **Book now** · **Send to WhatsApp** · **Download PDF**
-3. "Request quotation" → `create_quotation_request` tool → admin task with the AI's draft attached → staff verify prices → official branded PDF sent (SLA 2h).
+3. "Request quotation" → `create_quotation_request` tool → **auto-quote**: if every line is priceable from live adapters or in-validity rate tables and the total is under the configured ceiling, the official branded PDF is generated and sent within seconds (A3). Otherwise the AI draft routes to staff for one-click approval (A1, fallback SLA 2h). "Book now" enters the automated booking pipeline with passengers and payment prefilled.
 
 **Supported intents (launch set):** trip planning, cheapest-flight queries, hotel-near-X (hospital/exhibition/center), visa document questions, package discovery, medical travel routing (→ structured medical intake + human handoff), exhibition trips, honeymoon/family/business packages, budget estimation, general destination Q&A (halal food, weather season, shopping, safety tips).
 
@@ -59,10 +59,15 @@ Inputs: departure city · destination (or "اقترح لي / suggest") · purpos
 
 Output = `trip_plans` record rendered as: overview → flight options → hotel options → daily itinerary → estimated cost table → required documents → important notes → image gallery → map pins → booking buttons → **PDF export** → **WhatsApp share**.
 
-## 11.5 Staff quotation generator
+## 11.5 Quotation generation (automated + staff mode)
 
-Admin enters: customer name, destination, dates, travelers, package type, price lines, services, notes →
-AI produces: professional **Arabic quotation** + **English quotation** (tone: premium travel agency), branded PDF (both locales), ready-to-send WhatsApp message, email body, invoice preview. Staff edit inline before sending; every send recorded on the `quotations` record with status tracking (sent → viewed → accepted → converted).
+- **Automated (default):** customer-triggered quotes are generated end-to-end — pricing from adapters/rate tables, professional AR + EN copy, branded PDF, WhatsApp + email dispatch — with guardrails (fresh prices, total under ceiling, no manual-only components). Validity timers drive automatic follow-ups (viewed-not-accepted D+1, expiring D-1) and expiry.
+- **Staff mode:** admin enters customer name, destination, dates, travelers, package type, price lines, services, notes → AI produces the same AR/EN package + invoice preview; staff edit inline and send with one click. Used for complex/high-value/corporate quotes (A1 by policy).
+- Every send is recorded on the `quotations` record with status tracking (sent → viewed → accepted → converted) feeding win/loss analytics.
+
+## 11.5b Document AI (shared engine)
+
+The same AI stack powers passport MRZ/OCR auto-fill, upload classification (passport vs bank statement vs letter…), and visa pre-checks (readability, date coverage, photo spec) with per-field confidence; low confidence routes to typed exceptions. Full policy: [12-automation-first.md](12-automation-first.md) §12.6–12.7.
 
 ## 11.6 Images in AI outputs
 
