@@ -1,0 +1,218 @@
+<meta charset="utf-8">
+<title>Rihlati — Website Design</title>
+<style>
+  :root{--navy:#0B2545;--navy7:#13315C;--royal:#1D4E89;--gold:#C9A227;--turq:#2EC4B6;--sand:#F7F5F0;--ink:#1A1D23;--ink5:#5B6472;--ok:#1E9E5A;--warn:#E0A100;--line:#E7E3DA}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:"IBM Plex Sans Arabic","Segoe UI",Inter,system-ui,sans-serif;background:#EDEAE2;color:var(--ink);padding:32px 20px 64px}
+  h1{color:var(--navy);font-size:26px}
+  .sub{color:var(--ink5);margin:6px 0 28px;max-width:840px;line-height:1.6}
+  .frame{max-width:1180px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 16px 44px rgba(11,37,69,.16);margin:0 auto 46px;border:1px solid #d8d3c7}
+  .bar{background:#20242c;padding:10px 16px;display:flex;gap:7px;align-items:center}
+  .bar i{width:11px;height:11px;border-radius:99px;background:#555;display:inline-block}
+  .bar i:nth-child(1){background:#ff5f57}.bar i:nth-child(2){background:#febc2e}.bar i:nth-child(3){background:#28c840}
+  .bar span{color:#9aa;font-size:12px;margin-inline-start:12px}
+  .cap{font-weight:700;color:var(--navy);max-width:1180px;margin:0 auto 10px;font-size:15px}
+  .rtl{direction:rtl;text-align:right}
+  .nav{display:flex;align-items:center;gap:22px;padding:16px 40px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600}
+  .logo{font-size:19px;font-weight:800;color:var(--navy)} .logo b{color:var(--gold)}
+  .nav .sp{flex:1}
+  .btn{display:inline-block;background:var(--royal);color:#fff;border-radius:10px;padding:10px 20px;font-weight:700;font-size:13.5px;text-align:center}
+  .btn.gld{background:var(--gold)} .btn.trq{background:var(--turq)} .btn.ghost{background:#fff;color:var(--royal);border:1.5px solid var(--royal)} .btn.wa{background:#25D366}
+  .hero{background:linear-gradient(115deg,var(--navy) 30%,#1d5e8c 75%,#2EC4B6);color:#fff;padding:56px 40px 120px;position:relative}
+  .hero h2{font-size:34px;line-height:1.3;max-width:560px}
+  .hero p{opacity:.85;margin-top:10px;max-width:520px;line-height:1.8;font-size:14.5px}
+  .search{background:#fff;border-radius:18px;box-shadow:0 18px 40px rgba(11,37,69,.25);padding:20px 24px;margin:-84px 40px 0;position:relative}
+  .tabs{display:flex;gap:4px;margin-bottom:14px;font-size:13px;font-weight:700}
+  .tabs div{padding:8px 16px;border-radius:99px;color:var(--ink5)}
+  .tabs .on{background:var(--navy);color:#fff}
+  .fields{display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr 1fr auto;gap:10px}
+  .f{border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;font-size:12.5px}
+  .f .l{color:var(--ink5);font-size:10.5px;margin-bottom:2px}
+  .f .v{font-weight:700}
+  .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:4px 11px;margin-inline-end:6px}
+  .c-gold{background:var(--gold);color:#fff}.c-turq{background:#E2F7F5;color:#0E8A7F}.c-blue{background:#E8F0FB;color:var(--royal)}.c-green{background:#E6F6EE;color:var(--ok)}.c-warn{background:#FBF1D9;color:#8a6400}
+  .sec{padding:40px}
+  .sec h3{color:var(--navy);font-size:21px;margin-bottom:4px}
+  .sec .m{color:var(--ink5);font-size:13px;margin-bottom:20px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(11,37,69,.05)}
+  .ph{height:120px;background:linear-gradient(120deg,#B9C6D8,#8FA7C4);display:flex;align-items:flex-end;padding:10px;color:#fff;font-weight:800;font-size:15px}
+  .card .bd{padding:12px 14px;font-size:12.5px}
+  .muted{color:var(--ink5);font-size:11.5px}
+  .price{color:var(--navy);font-weight:800;font-size:16px}
+  .svc{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+  .svc .s{background:var(--sand);border-radius:16px;padding:18px 10px;text-align:center;font-size:12.5px;font-weight:700}
+  .svc .s div{font-size:26px;margin-bottom:8px}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .step{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;font-size:12.5px}
+  .step b{display:flex;width:30px;height:30px;background:var(--navy);color:#fff;border-radius:99px;align-items:center;justify-content:center;margin-bottom:10px}
+  .foot{background:var(--navy);color:#fff;padding:34px 40px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:24px;font-size:12.5px}
+  .foot .h{font-weight:800;margin-bottom:10px;color:var(--gold)}
+  .foot .lk{opacity:.8;line-height:2.2}
+  .two{display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
+  .list li{margin-bottom:8px;font-size:13px}
+  .badge{position:absolute;top:18px;inset-inline-end:40px;display:flex;gap:8px}
+</style>
+
+<h1>Rihlati رحلتي — Website Design (Next.js)</h1>
+<p class="sub">Three key pages. Page 1: Arabic homepage (RTL, default). Page 2: destination page (Istanbul, AR). Page 3: package details page (EN) showing the LTR variant. Desktop shown; all layouts collapse to a single column on mobile (mobile-first CSS).</p>
+
+<!-- ============ HOME (AR) ============ -->
+<div class="cap">Page 1 · Homepage — Arabic RTL</div>
+<div class="frame rtl">
+  <div class="bar"><i></i><i></i><i></i><span>rihlati.ly</span></div>
+  <div class="nav">
+    <span class="logo">رحلتي<b>.</b></span>
+    <span>رحلات</span><span>فنادق</span><span>باقات</span><span>تأشيرات</span><span>سفر علاجي</span><span>رجال الأعمال</span><span>الوجهات</span>
+    <span class="sp"></span>
+    <span class="muted">EN</span>
+    <a class="btn ghost" style="padding:8px 16px">تسجيل الدخول</a>
+    <a class="btn trq" style="padding:8px 16px">🤖 خطط رحلتي</a>
+  </div>
+  <div class="hero">
+    <div class="badge"><span class="chip c-gold">دعم واتساب 24/7</span><span class="chip" style="background:#ffffff22;color:#fff">دفع محلي 🇱🇾</span></div>
+    <h2>رحلتك كاملة تبدأ من هنا — طيران، فنادق، تأشيرات، وخطة ذكية</h2>
+    <p>منصة السفر الليبية الذكية: نحجز، نجهّز مستنداتك، نرافقك خطوة بخطوة — من طرابلس وبنغازي إلى العالم.</p>
+  </div>
+  <div class="search">
+    <div class="tabs"><div class="on">✈️ طيران</div><div>🏨 فنادق</div><div>🎒 باقات</div><div>🛂 تأشيرات</div><div>📶 eSIM</div><div>🚐 استقبال</div></div>
+    <div class="fields">
+      <div class="f"><div class="l">من</div><div class="v">طرابلس TIP</div></div>
+      <div class="f"><div class="l">إلى</div><div class="v">اسطنبول IST</div></div>
+      <div class="f"><div class="l">الذهاب</div><div class="v">15/08/2026</div></div>
+      <div class="f"><div class="l">العودة</div><div class="v">22/08/2026</div></div>
+      <div class="f"><div class="l">المسافرون</div><div class="v">2 بالغ · 2 طفل</div></div>
+      <a class="btn" style="align-self:stretch;display:flex;align-items:center">بحث 🔍</a>
+    </div>
+  </div>
+  <div class="sec">
+    <h3>كل خدمات سفرك في مكان واحد</h3>
+    <div class="m">من التذكرة إلى شريحة الإنترنت — نجهز رحلتك من الألف إلى الياء</div>
+    <div class="svc">
+      <div class="s"><div>✈️</div>رحلات طيران</div>
+      <div class="s"><div>🏨</div>فنادق</div>
+      <div class="s"><div>🛂</div>تأشيرات ومستندات</div>
+      <div class="s"><div>🏥</div>سفر علاجي</div>
+      <div class="s"><div>💼</div>معارض وأعمال</div>
+      <div class="s"><div>📶</div>eSIM وتأمين</div>
+    </div>
+  </div>
+  <div class="sec" style="background:var(--sand)">
+    <h3>باقات مختارة لك</h3>
+    <div class="m">أسعار شاملة وواضحة · عرض سعر PDF جاهز للمشاركة</div>
+    <div class="cards">
+      <div class="card"><div class="ph">اسطنبول العائلية</div><div class="bd"><span class="chip c-blue">7 ليالٍ</span><span class="chip c-turq">استقبال + eSIM</span><div class="muted" style="margin:8px 0 4px">طيران + فندق 4★ + برنامج يومي</div><div class="price">من 1,850 د.ل <span class="muted">/ للشخص</span></div></div></div>
+      <div class="card"><div class="ph" style="background:linear-gradient(120deg,#C4A35A,#8f6f2a)">دبي للتسوق</div><div class="bd"><span class="chip c-blue">5 ليالٍ</span><span class="chip c-gold">فاخر</span><div class="muted" style="margin:8px 0 4px">طيران + فندق 5★ + تأشيرة</div><div class="price">من 3,200 د.ل</div></div></div>
+      <div class="card"><div class="ph" style="background:linear-gradient(120deg,#7FB5A2,#40806c)">تونس العلاجية</div><div class="bd"><span class="chip c-green">علاجي</span><span class="chip c-turq">مترجم + منسق</span><div class="muted" style="margin:8px 0 4px">موعد المصحة + فندق قريب + استقبال</div><div class="price">حسب الحالة — استشارة مجانية</div></div></div>
+      <div class="card"><div class="ph" style="background:linear-gradient(120deg,#8E9BB5,#4d5c7d)">شنغن مساعدة تأشيرة</div><div class="bd"><span class="chip c-warn">مستندات</span><div class="muted" style="margin:8px 0 4px">قائمة تحقق + مراجعة ملف + حجوزات داعمة</div><div class="price">450 د.ل</div></div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <h3>كيف نشتغل؟</h3>
+    <div class="m">بساطة وشفافية — وحالة طلبك واضحة في كل لحظة</div>
+    <div class="steps">
+      <div class="step"><b>١</b><strong>اطلب</strong><br><span class="muted">ابحث أو اطلب من المساعد الذكي خطة رحلة</span></div>
+      <div class="step"><b>٢</b><strong>استلم عرض السعر</strong><br><span class="muted">عرض PDF رسمي خلال ساعتين عمل</span></div>
+      <div class="step"><b>٣</b><strong>ادفع بطريقتك</strong><br><span class="muted">تحويل مصرفي، كاش، أو محفظة</span></div>
+      <div class="step"><b>٤</b><strong>سافر مطمئن</strong><br><span class="muted">تذاكرك على التطبيق وواتساب + تذكيرات</span></div>
+    </div>
+  </div>
+  <div class="foot">
+    <div><div class="logo" style="color:#fff">رحلتي<b>.</b></div><p class="lk" style="margin-top:8px">منصة السفر الليبية الذكية — طرابلس، شارع الجمهورية<br>💬 واتساب: 218-91-000-0000+</p><a class="btn wa" style="margin-top:8px">تواصل واتساب</a></div>
+    <div><div class="h">الخدمات</div><div class="lk">طيران · فنادق · باقات<br>تأشيرات · علاجي · أعمال</div></div>
+    <div><div class="h">الوجهات</div><div class="lk">اسطنبول · دبي · تونس<br>القاهرة · روما · لندن</div></div>
+    <div><div class="h">الشركة</div><div class="lk">من نحن · سياسة الخصوصية<br>الشروط · بوابة الوكلاء · للشركات</div></div>
+  </div>
+</div>
+
+<!-- ============ DESTINATION (AR) ============ -->
+<div class="cap">Page 2 · Destination page — Istanbul (AR RTL) — SEO landing template</div>
+<div class="frame rtl">
+  <div class="bar"><i></i><i></i><i></i><span>rihlati.ly/ar/destinations/istanbul</span></div>
+  <div class="nav"><span class="logo">رحلتي<b>.</b></span><span class="sp"></span><a class="btn trq" style="padding:8px 16px">🤖 خطط رحلتي لاسطنبول</a></div>
+  <div style="height:190px;background:linear-gradient(115deg,var(--navy7),#1d5e8c 60%,#B9C6D8);color:#fff;padding:34px 40px;display:flex;flex-direction:column;justify-content:flex-end">
+    <div style="font-size:29px;font-weight:800">اسطنبول 🇹🇷</div>
+    <div style="opacity:.85;font-size:13.5px">حيث يلتقي الشرق بالغرب — الوجهة الأولى لليبيين</div>
+  </div>
+  <div class="sec two">
+    <div>
+      <h3>عن الوجهة</h3>
+      <p class="m" style="line-height:1.9;margin-bottom:16px">مدينة الجوامع والبسفور والأسواق. رحلة مباشرة من طرابلس (~3 ساعات). أفضل وقت للزيارة: أبريل–يونيو وسبتمبر–نوفمبر. الطعام الحلال متوفر في كل مكان.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px">
+        <div class="step">🛂 <b style="all:unset;font-weight:800">التأشيرة:</b><br><span class="muted">إقامة سياحية — تسهيلات للليبيين، نساعدك في الطلب</span></div>
+        <div class="step">💰 <b style="all:unset;font-weight:800">ميزانية تقديرية:</b><br><span class="muted">عائلة ×4 · 7 أيام: 6,000–12,000 د.ل</span></div>
+        <div class="step">✈️ <b style="all:unset;font-weight:800">رحلات من ليبيا:</b><br><span class="muted">طرابلس/بنغازي/مصراتة → اسطنبول يومياً</span></div>
+        <div class="step">🕌 <b style="all:unset;font-weight:800">أكل حلال:</b><br><span class="muted">متوفر في جميع المطاعم تقريباً</span></div>
+      </div>
+      <h3 style="margin-top:22px">أشهر المعالم</h3>
+      <div class="cards" style="grid-template-columns:repeat(3,1fr)">
+        <div class="card"><div class="ph" style="height:80px;font-size:12px">آيا صوفيا</div></div>
+        <div class="card"><div class="ph" style="height:80px;font-size:12px;background:linear-gradient(120deg,#7FB5A2,#40806c)">جولة البسفور</div></div>
+        <div class="card"><div class="ph" style="height:80px;font-size:12px;background:linear-gradient(120deg,#C4A35A,#8f6f2a)">البازار الكبير</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="padding:16px;margin-bottom:14px">
+        <div style="font-weight:800;color:var(--navy);margin-bottom:8px">باقات اسطنبول</div>
+        <div style="font-size:12.5px;line-height:2.1">🎒 العائلية 7 ليالٍ — <b>من 1,850 د.ل</b><br>💍 شهر العسل — <b>من 2,600 د.ل</b><br>💼 معارض الأعمال — <b>عرض حسب الطلب</b></div>
+        <a class="btn" style="display:block;margin-top:10px">عرض كل الباقات</a>
+      </div>
+      <div class="card" style="padding:16px;background:linear-gradient(135deg,#0E3E38,#14655d);color:#fff;border:none">
+        <div style="font-weight:800;margin-bottom:6px">🤖 المخطط الذكي</div>
+        <div style="font-size:12px;opacity:.85;line-height:1.8">جاوب على 6 أسئلة واستلم خطة رحلة كاملة لاسطنبول مع الأسعار التقديرية وبرنامج يومي — PDF جاهز.</div>
+        <a class="btn gld" style="display:block;margin-top:10px">ابدأ التخطيط</a>
+      </div>
+      <div class="card" style="padding:16px;margin-top:14px">
+        <div style="font-weight:800;color:var(--navy);margin-bottom:6px">تقييمات مسافرين ليبيين</div>
+        <div class="muted" style="line-height:1.9">⭐ 4.8 — «نظّموا لنا كل شيء حتى الاستقبال بالمطار» — عائلة من بنغازي</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PACKAGE (EN) ============ -->
+<div class="cap">Page 3 · Package details — English LTR variant</div>
+<div class="frame">
+  <div class="bar"><i></i><i></i><i></i><span>rihlati.ly/en/packages/istanbul-family-7n</span></div>
+  <div class="nav"><span class="logo">Rihlati<b>.</b></span><span>Flights</span><span>Hotels</span><span>Packages</span><span>Visas</span><span class="sp"></span><span class="muted">العربية</span><a class="btn ghost" style="padding:8px 16px">Sign in</a></div>
+  <div class="sec two" style="padding-top:28px">
+    <div>
+      <div class="ph" style="height:180px;border-radius:16px;font-size:18px">Istanbul Family Package · gallery ▸</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <div class="ph" style="height:52px;flex:1;border-radius:10px;font-size:10px">Bosphorus</div>
+        <div class="ph" style="height:52px;flex:1;border-radius:10px;font-size:10px;background:linear-gradient(120deg,#C4A35A,#8f6f2a)">Hotel</div>
+        <div class="ph" style="height:52px;flex:1;border-radius:10px;font-size:10px;background:linear-gradient(120deg,#7FB5A2,#40806c)">Old town</div>
+        <div class="ph" style="height:52px;flex:1;border-radius:10px;font-size:10px;background:linear-gradient(120deg,#8E9BB5,#4d5c7d)">Map 📍</div>
+      </div>
+      <h3 style="margin-top:18px">7 Nights · Istanbul Family Package</h3>
+      <div style="margin:6px 0 14px"><span class="chip c-blue">Flight included</span><span class="chip c-blue">4★ hotel · breakfast</span><span class="chip c-turq">Airport pickup</span><span class="chip c-turq">eSIM 10GB</span><span class="chip c-green">Visa support</span></div>
+      <b>Day-by-day program</b>
+      <ul class="list" style="margin:10px 0 0 18px;color:var(--ink5)">
+        <li><b style="color:var(--ink)">Day 1</b> — Arrival, private pickup, hotel check-in, Taksim evening walk</li>
+        <li><b style="color:var(--ink)">Day 2</b> — Sultanahmet: Hagia Sophia, Blue Mosque, Grand Bazaar</li>
+        <li><b style="color:var(--ink)">Day 3</b> — Bosphorus cruise + Dolmabahçe Palace</li>
+        <li><b style="color:var(--ink)">Day 4</b> — Free day / optional Princes' Islands tour</li>
+        <li class="muted">… Days 5–7 + included/excluded table</li>
+      </ul>
+    </div>
+    <div>
+      <div class="card" style="padding:18px;border:1.5px solid var(--gold)">
+        <div class="muted">Total for family of 4</div>
+        <div class="price" style="font-size:26px">7,400 LYD</div>
+        <div class="muted">≈ 1,850 LYD per person · <span class="chip c-warn" style="margin:0">Estimated — confirmed in official quote</span></div>
+        <a class="btn" style="display:block;margin-top:14px">Request official quotation</a>
+        <a class="btn gld" style="display:block;margin-top:8px">Book now</a>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <a class="btn wa" style="flex:1">💬 WhatsApp</a>
+          <a class="btn ghost" style="flex:1">📄 PDF</a>
+        </div>
+        <div class="muted" style="margin-top:12px;line-height:1.8">✓ Pay by bank transfer, cash, or wallet<br>✓ Deposit from 30% · balance before travel<br>✓ Free date change up to 14 days before</div>
+      </div>
+      <div class="card" style="padding:16px;margin-top:14px">
+        <b style="color:var(--navy)">Need it customized?</b>
+        <div class="muted" style="margin-top:6px;line-height:1.8">Different hotel, more days, add Antalya? Our AI planner rebuilds this package around your family.</div>
+        <a class="btn trq" style="display:block;margin-top:10px">🤖 Customize with AI</a>
+      </div>
+    </div>
+  </div>
+</div>

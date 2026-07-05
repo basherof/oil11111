@@ -1,0 +1,231 @@
+<meta charset="utf-8">
+<title>Rihlati — Admin Dashboard Design</title>
+<style>
+  :root{--navy:#0B2545;--navy7:#13315C;--royal:#1D4E89;--gold:#C9A227;--turq:#2EC4B6;--sand:#F7F5F0;--ink:#1A1D23;--ink5:#5B6472;--ok:#1E9E5A;--warn:#E0A100;--bad:#D64545;--line:#E7E3DA}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:Inter,"IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif;background:#EDEAE2;color:var(--ink);padding:32px 20px 64px}
+  h1{color:var(--navy);font-size:26px}
+  .sub{color:var(--ink5);margin:6px 0 28px;max-width:860px;line-height:1.6}
+  .cap{font-weight:700;color:var(--navy);max-width:1240px;margin:0 auto 10px;font-size:15px}
+  .frame{max-width:1240px;background:var(--sand);border-radius:14px;overflow:hidden;box-shadow:0 16px 44px rgba(11,37,69,.16);margin:0 auto 46px;border:1px solid #d8d3c7;display:flex;min-height:640px}
+  .side{width:210px;background:var(--navy);color:#fff;padding:18px 0;font-size:12.5px;flex-shrink:0}
+  .side .logo{font-size:17px;font-weight:800;padding:0 18px 16px;border-bottom:1px solid #ffffff18;margin-bottom:10px}
+  .side .logo b{color:var(--gold)}
+  .side .grp{padding:10px 18px 4px;font-size:10px;letter-spacing:1px;opacity:.5}
+  .side .it{padding:8px 18px;display:flex;gap:9px;align-items:center;opacity:.82}
+  .side .it.on{background:#ffffff14;border-inline-start:3px solid var(--gold);opacity:1;font-weight:700}
+  .side .n{margin-inline-start:auto;background:var(--bad);border-radius:99px;font-size:10px;padding:1px 7px;font-weight:700}
+  .side .n.t{background:var(--turq)}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .top{background:#fff;border-bottom:1px solid var(--line);padding:12px 22px;display:flex;align-items:center;gap:14px}
+  .search{flex:1;max-width:340px;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--ink5)}
+  .body{padding:20px 22px;overflow:hidden}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:#fff;border-radius:14px;padding:14px;border:1px solid var(--line)}
+  .kpi .l{font-size:11px;color:var(--ink5)}
+  .kpi .v{font-size:21px;font-weight:800;color:var(--navy);margin:3px 0}
+  .kpi .d{font-size:10.5px;font-weight:700}
+  .up{color:var(--ok)} .dn{color:var(--bad)}
+  .panel{background:#fff;border-radius:14px;border:1px solid var(--line);padding:16px;margin-bottom:14px}
+  .panel h4{font-size:13.5px;color:var(--navy);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .panel h4 a{font-size:11px;color:var(--royal);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;color:var(--ink5);font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:9px 8px;border-bottom:1px solid #F0EDE5;vertical-align:middle}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;border-radius:99px;padding:3px 9px;white-space:nowrap}
+  .p-ok{background:#E6F6EE;color:var(--ok)}.p-warn{background:#FBF1D9;color:#8a6400}.p-turq{background:#E2F7F5;color:#0E8A7F}
+  .p-bad{background:#FBE7E7;color:var(--bad)}.p-blue{background:#E8F0FB;color:var(--royal)}.p-grey{background:#EEE;color:var(--ink5)}
+  .dot{width:6px;height:6px;border-radius:99px;background:currentColor;display:inline-block}
+  .btn{display:inline-block;background:var(--royal);color:#fff;border-radius:9px;padding:8px 14px;font-weight:700;font-size:11.5px;text-align:center}
+  .btn.ghost{background:#fff;color:var(--royal);border:1.5px solid var(--royal)}
+  .btn.ok{background:var(--ok)} .btn.warn{background:var(--warn)} .btn.bad{background:var(--bad)} .btn.trq{background:var(--turq)}
+  .cols{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+  .bar{height:9px;border-radius:9px;background:#EEE;overflow:hidden;margin:4px 0 10px}
+  .bar div{height:100%;background:var(--royal);border-radius:9px}
+  .muted{color:var(--ink5);font-size:11px}
+  .doc{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12px}
+  .avatar{width:26px;height:26px;border-radius:99px;background:var(--navy7);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-right:6px}
+  .chat{border:1px solid var(--line);border-radius:12px;padding:12px;background:#FBFAF7;font-size:12px}
+  .msg{max-width:75%;border-radius:10px;padding:7px 10px;margin-bottom:7px;line-height:1.5}
+  .msg.in{background:#fff;border:1px solid var(--line)}
+  .msg.out{background:#DCF3E4;margin-left:auto}
+</style>
+
+<h1>Rihlati رحلتي — Admin Dashboard Design</h1>
+<p class="sub">Three key views: operations overview, bookings queue, and the visa document review + WhatsApp console. Same shell serves Agent and Corporate dashboards with role-gated navigation. Dashboard UI is EN-first for staff with full AR toggle; customer-facing content fields always bilingual.</p>
+
+<!-- ============ OVERVIEW ============ -->
+<div class="cap">View 1 · Operations overview</div>
+<div class="frame">
+  <div class="side">
+    <div class="logo">Rihlati<b>.</b> Admin</div>
+    <div class="grp">OPERATIONS</div>
+    <div class="it on">📊 Overview</div>
+    <div class="it">🧾 Bookings <span class="n">12</span></div>
+    <div class="it">✈️ Flight requests <span class="n">5</span></div>
+    <div class="it">🏨 Hotel requests <span class="n">3</span></div>
+    <div class="it">🎒 Packages</div>
+    <div class="it">🛂 Visa files <span class="n">7</span></div>
+    <div class="it">🏥 Medical <span class="n t">2</span></div>
+    <div class="it">💼 Business travel</div>
+    <div class="grp">MONEY</div>
+    <div class="it">💳 Payments <span class="n">4</span></div>
+    <div class="it">🧾 Invoices</div>
+    <div class="it">↩️ Refunds</div>
+    <div class="grp">PEOPLE</div>
+    <div class="it">👥 Customers</div>
+    <div class="it">🤝 Agents</div>
+    <div class="it">🏢 Corporate</div>
+    <div class="it">💬 Support <span class="n">9</span></div>
+    <div class="grp">SYSTEM</div>
+    <div class="it">🤖 AI quotations</div>
+    <div class="it">🎁 Promotions · Loyalty</div>
+    <div class="it">📈 Reports</div>
+    <div class="it">⚙️ Staff & settings</div>
+  </div>
+  <div class="main">
+    <div class="top">
+      <div class="search">🔍 Search booking ref, phone, passport…</div>
+      <span style="flex:1"></span>
+      <span class="pill p-turq"><span class="dot"></span>SLA: quotes 1.4h avg</span>
+      <span class="muted">🔔 6</span>
+      <span><span class="avatar">SA</span><b style="font-size:12px">Salem · Super Admin</b></span>
+    </div>
+    <div class="body">
+      <div class="kpis">
+        <div class="kpi"><div class="l">Bookings today</div><div class="v">34</div><div class="d up">▲ 12% vs yesterday</div></div>
+        <div class="kpi"><div class="l">Sales this month</div><div class="v">184,300 LYD</div><div class="d up">▲ 8%</div></div>
+        <div class="kpi"><div class="l">Pending payments</div><div class="v">21,450 LYD</div><div class="d dn">4 over 24h ⚠</div></div>
+        <div class="kpi"><div class="l">Open support tickets</div><div class="v">9</div><div class="d up">avg reply 11 min</div></div>
+        <div class="kpi"><div class="l">Quotes awaiting reply</div><div class="v">6</div><div class="d">2 follow-ups due</div></div>
+      </div>
+      <div class="cols">
+        <div class="panel">
+          <h4>⚡ Action queue — needs a human now <a>View all →</a></h4>
+          <table>
+            <tr><th>Ref</th><th>Customer</th><th>Item</th><th>Status</th><th>Waiting</th><th></th></tr>
+            <tr><td><b>RHL-8K2M4</b></td><td><span class="avatar">FA</span>Fatima A.</td><td>✈️ TIP→IST ×4</td><td><span class="pill p-warn"><span class="dot"></span>Receipt uploaded</span></td><td>26 min</td><td><a class="btn ok">Confirm payment</a></td></tr>
+            <tr><td><b>RHL-3T9QA</b></td><td><span class="avatar">OM</span>Omar M.</td><td>🏥 Tunis cardiology</td><td><span class="pill p-turq"><span class="dot"></span>New request</span></td><td>41 min</td><td><a class="btn">Assign officer</a></td></tr>
+            <tr><td><b>RHL-7PW22</b></td><td><span class="avatar">AY</span>Aya S.</td><td>🛂 Student visa TR</td><td><span class="pill p-bad"><span class="dot"></span>Docs need correction</span></td><td>2.1 h</td><td><a class="btn warn">Notify customer</a></td></tr>
+            <tr><td><b>RHL-5HH81</b></td><td><span class="avatar">TC</span>Trading Co.</td><td>💼 Dubai ×5 · Gulfood</td><td><span class="pill p-blue"><span class="dot"></span>Quote requested</span></td><td>1.6 h</td><td><a class="btn trq">🤖 AI quotation</a></td></tr>
+            <tr><td><b>RHL-2NX40</b></td><td><span class="avatar">KH</span>Khaled B.</td><td>✈️ BEN→CAI ×1</td><td><span class="pill p-warn"><span class="dot"></span>Waiting supplier</span></td><td>3.4 h</td><td><a class="btn ghost">Open</a></td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="panel">
+            <h4>Top destinations · Aug</h4>
+            <div class="muted">Istanbul</div><div class="bar"><div style="width:82%"></div></div>
+            <div class="muted">Tunis (medical)</div><div class="bar"><div style="width:57%;background:var(--turq)"></div></div>
+            <div class="muted">Dubai</div><div class="bar"><div style="width:44%;background:var(--gold)"></div></div>
+            <div class="muted">Cairo</div><div class="bar"><div style="width:31%"></div></div>
+          </div>
+          <div class="panel">
+            <h4>Booking pipeline</h4>
+            <table>
+              <tr><td>Pending payment</td><td style="text-align:right"><b>12</b></td></tr>
+              <tr><td>Processing / supplier</td><td style="text-align:right"><b>8</b></td></tr>
+              <tr><td>Requires action</td><td style="text-align:right"><b style="color:var(--bad)">5</b></td></tr>
+              <tr><td>Ticket issued today</td><td style="text-align:right"><b style="color:var(--ok)">19</b></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BOOKINGS ============ -->
+<div class="cap">View 2 · Bookings queue with lifecycle statuses</div>
+<div class="frame">
+  <div class="side">
+    <div class="logo">Rihlati<b>.</b> Admin</div>
+    <div class="grp">OPERATIONS</div>
+    <div class="it">📊 Overview</div>
+    <div class="it on">🧾 Bookings <span class="n">12</span></div>
+    <div class="it">✈️ Flight requests</div>
+    <div class="it">🏨 Hotel requests</div>
+    <div class="it">🛂 Visa files</div>
+    <div class="it">🏥 Medical</div>
+    <div class="grp">MONEY</div>
+    <div class="it">💳 Payments</div>
+    <div class="it">🧾 Invoices</div>
+  </div>
+  <div class="main">
+    <div class="top">
+      <div class="search">🔍 RHL-… / phone / name</div>
+      <span style="flex:1"></span>
+      <a class="btn ghost">⬇ Export Excel</a>
+      <a class="btn ghost">⬇ PDF report</a>
+      <a class="btn">+ New booking</a>
+    </div>
+    <div class="body">
+      <div style="margin-bottom:12px">
+        <span class="pill p-blue">All 156</span> <span class="pill p-warn">Pending payment 12</span> <span class="pill p-turq">Processing 8</span> <span class="pill p-grey">Waiting supplier 3</span> <span class="pill p-bad">Requires action 5</span> <span class="pill p-ok">Confirmed 41</span> <span class="pill p-ok">Ticket issued 62</span> <span class="pill p-grey">Completed · Cancelled · Refunded</span>
+      </div>
+      <div class="panel">
+        <table>
+          <tr><th>Ref</th><th>Customer</th><th>Channel</th><th>Items</th><th>Total</th><th>Paid</th><th>Status</th><th>Assignee</th><th></th></tr>
+          <tr><td><b>RHL-8K2M4</b></td><td>Fatima A. <span class="muted">+218 91…</span></td><td><span class="pill p-grey">App</span></td><td>✈️×4 🏨 📶 🛂×4</td><td><b>9,340</b></td><td><span class="pill p-warn">4,860 / 9,340</span></td><td><span class="pill p-warn"><span class="dot"></span>Pending payment</span></td><td><span class="avatar">MN</span></td><td><a class="btn ghost">Open</a></td></tr>
+          <tr><td><b>RHL-5HH81</b></td><td>Trading Co. <span class="pill p-blue">Corporate</span></td><td><span class="pill p-grey">Dashboard</span></td><td>✈️×5 🏨×5 🛂×5 🚐</td><td><b>28,750</b></td><td><span class="pill p-grey">Invoice · net 30</span></td><td><span class="pill p-turq"><span class="dot"></span>Processing</span></td><td><span class="avatar">SA</span></td><td><a class="btn ghost">Open</a></td></tr>
+          <tr><td><b>RHL-9QLL7</b></td><td>Al-Safir Travel <span class="pill p-gold" style="background:#F5EBCB;color:#8a6400">Agent</span></td><td><span class="pill p-grey">Agent portal</span></td><td>✈️×2</td><td><b>2,140</b></td><td><span class="pill p-ok">Wallet ✓</span></td><td><span class="pill p-ok"><span class="dot"></span>Ticket issued</span></td><td>—</td><td><a class="btn ghost">Open</a></td></tr>
+          <tr><td><b>RHL-3T9QA</b></td><td>Omar M.</td><td><span class="pill p-grey">WhatsApp</span></td><td>🏥 Tunis package</td><td class="muted">quoting…</td><td>—</td><td><span class="pill p-turq"><span class="dot"></span>Under processing</span></td><td><span class="avatar">HD</span></td><td><a class="btn ghost">Open</a></td></tr>
+          <tr><td><b>RHL-7PW22</b></td><td>Aya S.</td><td><span class="pill p-grey">App</span></td><td>🛂 Student visa TR 🏨</td><td><b>1,890</b></td><td><span class="pill p-ok">Paid ✓</span></td><td><span class="pill p-bad"><span class="dot"></span>Requires action</span></td><td><span class="avatar">VO</span></td><td><a class="btn bad">Fix docs</a></td></tr>
+          <tr><td><b>RHL-1AC03</b></td><td>Salma K.</td><td><span class="pill p-grey">AI planner</span></td><td>🎒 Istanbul honeymoon</td><td><b>5,200</b></td><td><span class="pill p-warn">Deposit 30% ✓</span></td><td><span class="pill p-ok"><span class="dot"></span>Confirmed</span></td><td><span class="avatar">MN</span></td><td><a class="btn ghost">Open</a></td></tr>
+        </table>
+        <div class="muted" style="margin-top:10px">Every status change is logged (who · when · note) → status_history. Refund & cancel actions require Finance role + 2FA re-prompt.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VISA + WHATSAPP ============ -->
+<div class="cap">View 3 · Visa file review + linked WhatsApp console</div>
+<div class="frame">
+  <div class="side">
+    <div class="logo">Rihlati<b>.</b> Admin</div>
+    <div class="grp">OPERATIONS</div>
+    <div class="it">📊 Overview</div>
+    <div class="it">🧾 Bookings</div>
+    <div class="it on">🛂 Visa files <span class="n">7</span></div>
+    <div class="it">💬 Support <span class="n">9</span></div>
+  </div>
+  <div class="main">
+    <div class="top">
+      <b style="font-size:13px">🛂 RHL-7PW22 · Aya S. — Turkey student visa</b>
+      <span class="pill p-bad"><span class="dot"></span>Docs need correction</span>
+      <span style="flex:1"></span>
+      <a class="btn ghost">📄 Generate checklist PDF</a>
+      <a class="btn trq">🤖 Draft WhatsApp reply</a>
+    </div>
+    <div class="body">
+      <div class="cols">
+        <div class="panel">
+          <h4>Document checklist — review each item</h4>
+          <div class="doc"><span>🛂 Passport copy <span class="muted">· uploaded via app · 02 Aug</span></span><span><span class="pill p-ok">Accepted</span></span></div>
+          <div class="doc"><span>📷 Personal photo <span class="muted">· via WhatsApp · 02 Aug</span></span><span><span class="pill p-ok">Accepted</span></span></div>
+          <div class="doc" style="border-color:var(--warn)"><span>🏦 Bank statement <span class="muted">· 01 Aug</span></span><span><span class="pill p-warn">Needs correction</span> <a class="btn warn">Note ✎</a></span></div>
+          <div class="doc" style="border-color:var(--bad)"><span>🎓 University acceptance letter</span><span><span class="pill p-bad">Missing</span> <a class="btn bad">Request</a></span></div>
+          <div class="doc"><span>🛡 Travel insurance</span><span><span class="pill p-turq">Under review</span></span></div>
+          <div class="doc"><span>✈️ Flight reservation <span class="muted">· generated internally</span></span><span><span class="pill p-ok">Accepted</span></span></div>
+          <div class="muted" style="margin:6px 0 10px">Statuses: Received · Missing · Needs correction · Accepted · Rejected · Under review — each change notifies the customer (push + WhatsApp) automatically.</div>
+          <a class="btn">Save review → notify customer</a>
+          <a class="btn ghost">Set appointment date</a>
+        </div>
+        <div class="panel">
+          <h4>💬 WhatsApp thread <span class="pill p-ok"><span class="dot"></span>linked to booking</span></h4>
+          <div class="chat">
+            <div class="msg in">أهلا، رفعت كشف الحساب 🙏</div>
+            <div class="msg out">شكراً آية! الكشف يغطي شهرين فقط — المطلوب آخر 3 أشهر مختوم من المصرف 🏦</div>
+            <div class="msg in">تمام باش نجيبه غدوة إن شاء الله</div>
+            <div class="msg out">ممتاز — نذكّرك: باقي أيضاً خطاب القبول الجامعي 🎓</div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <div class="search" style="flex:1;max-width:none">Type a reply… (AR/EN)</div>
+              <a class="btn">Send</a>
+            </div>
+          </div>
+          <div class="muted" style="margin-top:10px;line-height:1.8">Customer profile · phone verified ✓<br>Payments: 1,890 LYD paid ✓<br>Assigned: Visa Officer — Huda<br>SLA: reply due in <b style="color:var(--warn)">18 min</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
