@@ -94,25 +94,35 @@ flowchart TB
 
 ## 4.3 Booking lifecycle state machine
 
+> **Authoritative expanded model:** [13-execution-plan-core-mvp.md §13.2](13-execution-plan-core-mvp.md) — 17 green-path states + 16 exception states + terminal states, with the full diagram.
+
 ```mermaid
 stateDiagram-v2
+    direction LR
     [*] --> draft
-    draft --> pending_payment: customer submits
-    draft --> cancelled: abandoned/expired
-    pending_payment --> payment_received: finance confirms / gateway webhook
-    pending_payment --> cancelled
-    payment_received --> processing: assigned to staff / auto
-    processing --> waiting_supplier: sent to supplier
-    waiting_supplier --> confirmed: supplier confirms
-    processing --> confirmed
-    confirmed --> ticket_issued: ticket/voucher generated
-    ticket_issued --> completed: travel date passed
-    confirmed --> requires_action: schedule change / document missing
-    requires_action --> processing
-    payment_received --> refunded: refund approved
-    confirmed --> cancelled
-    cancelled --> refunded
-    completed --> [*]
+    draft --> ai_planned
+    ai_planned --> quotation_generated
+    quotation_generated --> awaiting_customer_confirmation
+    awaiting_customer_confirmation --> awaiting_payment: customer confirms details
+    awaiting_payment --> payment_received: auto-match / webhook
+    payment_received --> supplier_confirmation_pending
+    supplier_confirmation_pending --> confirmed
+    confirmed --> issued: ticket_issued / voucher_issued
+    issued --> documents_generated
+    documents_generated --> documents_delivered
+    documents_delivered --> pre_travel_reminders_active
+    pre_travel_reminders_active --> in_travel
+    in_travel --> completed
+    completed --> review_requested
+    review_requested --> closed
+    closed --> [*]
+    note right of awaiting_payment
+      Any state can branch to one of 16 typed
+      exception states (bound exception record
+      required); resolution resumes at the
+      stored resume_state. cancelled / refunded /
+      failed reachable per policy.
+    end note
 ```
 
 Rules: transitions only via service layer (never raw updates); the default actor is **`system`** (automation engine, timers, webhooks); each transition writes `status_history` (who, when, note) and fires notification events. Timers: `pending_payment` auto-expires; `waiting_supplier` auto-escalates to a `supplier_error` exception; `confirmed → completed` at trip end. `requires_action` can only be entered with a bound exception record, and resolving that exception resumes the flow automatically.

@@ -72,12 +72,28 @@ user_documents (id, user_id FK, traveler_profile_id FK NULL,
 ## 5.4 Unified booking engine
 
 ```sql
-bookings (id, reference varchar(10) UNIQUE,       -- e.g. RHL-8K2M4
+bookings (id, reference varchar(10) UNIQUE,       -- display ref, e.g. RHL-8K2M4
+       payment_reference varchar(16) UNIQUE,       -- e.g. TRV-2026-000482 (see payment_references)
        customer_id FK users, agent_id FK agents NULL, company_id FK companies NULL,
        channel enum('app','web','agent','corporate','staff','ai'),
-       status enum('draft','pending_payment','payment_received','processing',
-                   'waiting_supplier','confirmed','ticket_issued','requires_action',
-                   'completed','cancelled','refunded','failed'),
+       -- Expanded state model (authoritative: 13-execution-plan-core-mvp.md §13.2)
+       status enum(
+         -- green path
+         'draft','ai_planned','quotation_generated','awaiting_customer_confirmation',
+         'awaiting_payment','payment_received','supplier_confirmation_pending',
+         'confirmed','ticket_issued','voucher_issued','documents_generated',
+         'documents_delivered','pre_travel_reminders_active','in_travel',
+         'completed','review_requested','closed',
+         -- exception states (each requires a bound open exception record)
+         'exc_payment_unmatched','exc_payment_failed','exc_ocr_low_confidence',
+         'exc_passport_issue','exc_name_mismatch','exc_supplier_error',
+         'exc_supplier_price_changed','exc_visa_risk','exc_missing_document',
+         'exc_refund_requested','exc_refund_dispute','exc_medical_case',
+         'exc_high_value_booking','exc_customer_complaint','exc_sentiment_alert',
+         'exc_staff_approval_required',
+         -- terminal/administrative
+         'cancelled','refunded','failed'),
+       resume_state varchar NULL,                  -- where the machine resumes after exception clears
        currency, subtotal, service_fee, tax, discount, total,
        amount_paid, payment_status enum('unpaid','partial','paid','refunded'),
        assigned_staff_id FK users, source_quotation_id FK quotations NULL, notes_internal)
@@ -291,28 +307,64 @@ trip_plans (id, user_id FK, source enum('ai','manual'), title, destination,
 ## 5.12 Automation, exceptions & document AI
 
 ```sql
-exceptions (id, type enum('payment_unmatched','payment_failed','supplier_error',
-       'ocr_low_confidence','passport_risk','visa_risk','doc_unclassifiable',
-       'refund_dispute','medical_case','sentiment_alert','sla_breach_risk','fulfillment_manual'),
+exceptions (id, type enum(                         -- authoritative 17 types (doc 13 §13.3)
+       'payment_unmatched','payment_failed','supplier_error','supplier_price_changed',
+       'ocr_low_confidence','passport_expiry_risk','name_mismatch','visa_risk',
+       'missing_document','refund_requested','refund_dispute','medical_case',
+       'high_value_booking','customer_complaint','sentiment_alert',
+       'whatsapp_delivery_failed','pdf_generation_failed'),
        severity enum('low','normal','high','critical'),
        entity_type, entity_id,                     -- booking_item, payment, visa_application…
+       booking_state_at_creation, next_state_after_resolution,
+       root_cause text,
        context jsonb,                              -- auto-attached evidence (OCR diff, supplier payload…)
        suggested_actions jsonb,                    -- one-click resolutions offered to staff
        routed_role_id FK roles, assigned_to FK users NULL,
        status enum('open','in_progress','waiting_customer','resolved','escalated'),
-       sla_due_at, escalated_at, resolution_action, resolution_note, resolved_by, resolved_at)
+       sla_due_at, escalated_at, resolution_action, resolution_note, resolved_by, resolved_at,
+       internal_notes jsonb)
        -- resolving an exception resumes the bound state machine automatically
 
-automation_settings (workflow_key PK,              -- flight_issue, quote_send, transfer_confirm…
-       level enum('A0','A1','A2','A3'), params jsonb,   -- ceilings, hold minutes, veto windows
-       updated_by, updated_at)                     -- versioned via audit_logs
+automation_settings (workflow_key PK,              -- 16 workflows (doc 13 §13.4): ai_trip_planning,
+       -- quotation_generation, passport_ocr, payment_matching, visa_precheck, whatsapp_messages,
+       -- pdf_generation, supplier_confirmation, ticket_issuing, voucher_sending, esim_delivery,
+       -- insurance_delivery, refund_initiation, agent_commission, corporate_invoice, loyalty_points
+       level enum('A0','A1','A2','A3'),
+       permanent_a1 bool DEFAULT false,            -- visa approval, refunds, medical: locked at A1
+       confidence_thresholds jsonb,                -- {high:0.90, medium:0.70} per workflow
+       params jsonb,                               -- ceilings, hold minutes, veto windows
+       kill_switch_active bool DEFAULT false, kill_switch_reason, kill_switch_by, kill_switch_at,
+       updated_by, updated_at)                     -- every change versioned via audit_logs
+
+kill_switch_scopes (id, scope enum('workflow','supplier','payment_method','package',
+       'destination','agent','company'), scope_ref, active bool, reason, activated_by, activated_at)
+
+automation_decisions (id, workflow_key, entity_type, entity_id,
+       decision enum('auto_continue','customer_confirm','staff_veto_window','exception'),
+       confidence numeric(4,3), threshold_high, threshold_medium,   -- thresholds AT decision time
+       model_or_rule, inputs_digest, outcome, created_at)           -- audit reproducibility
+
+customer_confirmations (id, booking_id FK, user_id FK,
+       confirmed_fields jsonb,                     -- snapshot: names, passport nos, dates, route,
+                                                   -- baggage, hotel, policies, total, validity, T&C
+       locale, ip, user_agent, confirmed_at)       -- mandatory before payment/issuing (doc 13 §13.11)
+
+kpi_snapshots (id, period daterange, metrics jsonb, generated_at)
+       -- touchless_rate, exception_rate, avg_resolution_min, ocr_success, payment_match_rate,
+       -- supplier_failure_rate, wa_delivery_rate, pdf_success_rate, conversion, refund_rate…
+
+automation_backlog_reports (id, week daterange, top_causes jsonb, generated_at, reviewed_by NULL)
 
 automation_rules (id, name, trigger_event,         -- ECA rules: notifications, escalations, guards
        conditions jsonb, actions jsonb, enabled bool, test_mode bool,
        created_by, version int)
 
-payment_references (id, booking_id FK, reference varchar(12) UNIQUE,  -- printed on transfer order
-       expected_amount, currency, status enum('awaiting','matched','partial','expired'))
+payment_references (id, booking_id FK, reference varchar(16) UNIQUE,  -- TRV-2026-000482
+       expected_amount, currency,
+       status enum('awaiting','matched','partial','overpaid','expired'),
+       amount_received NULL, difference NULL,      -- wrong-amount handling (doc 13 §13.8)
+       suggested_action enum('request_remaining','approve_partial','refund_extra',
+                             'finance_review') NULL)
 
 ocr_extractions (id, user_document_id FK, engine, kind enum('passport_mrz','receipt','generic_doc'),
        fields jsonb,                               -- extracted values + per-field confidence

@@ -58,7 +58,17 @@ Legend: 🟢 full · 🟡 basic version · ⚪ not in phase
 
 **Goal:** launch a self-service, machine-handled booking system where staff work only a typed Exception Queue. Supplier APIs not required — the manual adapter *generates exceptions* instead of making staff the default path.
 
-**Included:**
+**Execution split (authoritative order in [13-execution-plan-core-mvp.md](13-execution-plan-core-mvp.md)) — Phase 1 is built engine-first:**
+
+| Stage | Contents | Gate |
+|---|---|---|
+| **1a — Core Automation Backend MVP** | Monorepo + migrations, state machine, exception queue, automation settings A0–A3 + kill switches, audit logs, payment reference & matching, OCR interface, visa readiness scoring, WhatsApp/PDF interfaces, Trip Wallet structure, confidence scoring, KPI tracking | Engine deliverables green in CI |
+| **1b — Booking Flow Simulator** | 13 scenarios exercising the real engine (touchless run + 12 failure modes) | All scenarios pass with correct exceptions, routing, SLA, audit trails |
+| **1c — Basic Admin Dashboard** | 7 screens: Automation Overview, Exception Queue, Booking Detail, Automation Settings, Payment Matching, OCR & Documents, KPI Dashboard | Staff can operate end-to-end |
+| **1d — Internal pilot** | ~50 real/semi-real cases via admin + WhatsApp (no public app yet) | Touchless rate measured; top exception causes fed to backlog |
+| **1e — Customer app + website** | Flutter app + Next.js site on top of the proven engine | Public launch |
+
+**Included (full Phase 1 scope):**
 - Flutter app + Next.js website + React admin dashboard (built around the Exception Queue)
 - Auth: phone OTP + email verification; bilingual UI (AR RTL / EN LTR)
 - **Automated booking pipeline**: 12-state machine with system-driven transitions, timers (payment expiry, supplier timeout), and typed exceptions; `requires_action` always bound to an exception record

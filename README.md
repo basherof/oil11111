@@ -24,6 +24,7 @@ A complete **automation-first travel operating system** for the Libyan market: f
 | [`docs/10-recommendations.md`](docs/10-recommendations.md) | Suggestions to improve the idea further |
 | [`docs/11-ai-assistant.md`](docs/11-ai-assistant.md) | AI travel assistant / trip builder / quotation generator design |
 | [`docs/12-automation-first.md`](docs/12-automation-first.md) | ⭐ **Automation-first operating model** — green path, exception queue, OCR, no-code controls |
+| [`docs/13-execution-plan-core-mvp.md`](docs/13-execution-plan-core-mvp.md) | ⭐ **Authoritative execution plan** — Core Automation Backend MVP first, expanded state machine, 17 exception types, confidence scoring, simulator, pilot |
 | [`design/design-system.md`](design/design-system.md) | Brand, colors, typography, components, RTL rules |
 | [`design/user-flows.md`](design/user-flows.md) | App flow diagrams (Mermaid — renders on GitHub) |
 | [`design/wireframes/mobile-app.html`](design/wireframes/mobile-app.html) | Mobile app wireframes — 16 key screens, AR/EN |
@@ -35,6 +36,22 @@ Open the wireframe HTML files in any browser — they are self-contained (no bui
 ## 🚀 The one-paragraph pitch
 
 Libyan travelers today book trips through WhatsApp messages to travel offices, with no visibility into prices, documents, or booking status. Rihlati turns that into a self-service, AI-powered operating system: search, instant AI quotations, passport scanning (OCR), visa readiness scoring, automated payments, automatic ticket/voucher delivery to an offline Trip Wallet — while keeping the human, WhatsApp-centered service Libyans trust for the moments that need people. Normal bookings run **touchless**; staff work a single exception queue (failed payments, supplier errors, unclear passports, visa risks, refunds, medical cases, complaints). It serves individuals, families, medical travelers, students, business travelers, corporations, and travel agents from one platform, and its AI assistant plans complete trips in Arabic.
+
+## 🛠 Execution order (authoritative — see [docs/13-execution-plan-core-mvp.md](docs/13-execution-plan-core-mvp.md))
+
+The engine is built and proven **before** the full user-facing product:
+
+1. **Pull Request review** of all automation-first documentation (owner approval gates development)
+2. **Core Automation Backend MVP** — state machine, exception queue, automation settings A0–A3, kill switches, audit logs, payment matching, OCR interface, visa scoring, WhatsApp/PDF interfaces, Trip Wallet structure, confidence scoring, KPI tracking
+3. **Booking Flow Simulator** — 13 scenarios validating the engine before any customer UI
+4. **Admin Exception Dashboard** (basic, 7 screens)
+5. **Internal pilot** (~50 real/semi-real cases; measure touchless rate)
+6. Customer mobile app + website
+7. Agent + corporate dashboards
+8. Full supplier integrations
+9. Advanced AI travel assistant
+
+> Normal booking = automated · Risky booking = exception · High-risk decision = human approval.
 
 ## 🧭 First release (MVP) focus — automation-first
 

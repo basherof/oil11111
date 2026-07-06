@@ -2,6 +2,8 @@
 
 **The upgrade in one sentence:** same platform, same services, same user types, same phased roadmap — but the default path for every workflow is now **machine-handled end-to-end**, and humans work a single **Exception Queue** instead of processing every booking.
 
+> **Refined by [13-execution-plan-core-mvp.md](13-execution-plan-core-mvp.md)** (authoritative where they differ): expanded 17+16 state model, 17-type exception taxonomy with role routing, recommended starting A-levels, confidence scoring with admin thresholds, mandatory customer confirmation step, Booking Flow Simulator, and the core-backend-first build order.
+
 ## 12.1 From travel agency to travel operating system
 
 | | Before (staff-first) | Now (automation-first) |
@@ -56,7 +58,7 @@ sequenceDiagram
 
 ## 12.4 The Exception Queue (the only staff work surface)
 
-One queue replaces per-department task lists. Every automation failure creates a **typed, routed, SLA-timed exception** with full context and one-click resolution actions.
+One queue replaces per-department task lists. Every automation failure creates a **typed, routed, SLA-timed exception** with full context and one-click resolution actions. *(Illustrative subset below — the authoritative 17-type taxonomy and routing table is in [13 §13.3](13-execution-plan-core-mvp.md).)*
 
 | Exception type | Trigger | Routed to | Auto-context attached | Primary actions |
 |---|---|---|---|---|
