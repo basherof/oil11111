@@ -25,6 +25,18 @@ A complete **automation-first travel operating system** for the Libyan market: f
 | [`docs/11-ai-assistant.md`](docs/11-ai-assistant.md) | AI travel assistant / trip builder / quotation generator design |
 | [`docs/12-automation-first.md`](docs/12-automation-first.md) | ⭐ **Automation-first operating model** — green path, exception queue, OCR, no-code controls |
 | [`docs/13-execution-plan-core-mvp.md`](docs/13-execution-plan-core-mvp.md) | ⭐ **Authoritative execution plan** — Core Automation Backend MVP first, expanded state machine, 17 exception types, confidence scoring, simulator, pilot |
+| [`docs/14-activation-and-run-guide.md`](docs/14-activation-and-run-guide.md) | ⭐ **Activation & run guide** — install, .env, automation activation, simulator testing, admin console, verification checklist, test credentials |
+| [`apps/api`](apps/api) + [`packages/shared-types`](packages/shared-types) | 🧠 **Smart Core Foundation (code)** — NestJS engine: state machine, exception queue, A0–A3 + kill switches, audit, payment matching, OCR/visa/WhatsApp/PDF interfaces, Trip Wallet, KPIs, 13-scenario simulator, admin console |
+
+## ⚡ Quick start (Smart Core, mock mode — no DB or API keys needed)
+
+```bash
+npm install
+npm run build -w @rihlati/shared-types
+npm run simulate       # 13-scenario Booking Flow Simulator → expect 13/13 passed
+npm run dev            # API on :3000 · admin console at /admin/admin.html
+# login: admin@rihlati.test / Admin@12345  (test credentials — docs/14 §5)
+```
 | [`design/design-system.md`](design/design-system.md) | Brand, colors, typography, components, RTL rules |
 | [`design/user-flows.md`](design/user-flows.md) | App flow diagrams (Mermaid — renders on GitHub) |
 | [`design/wireframes/mobile-app.html`](design/wireframes/mobile-app.html) | Mobile app wireframes — 16 key screens, AR/EN |

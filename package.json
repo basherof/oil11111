@@ -1,0 +1,20 @@
+{
+  "name": "rihlati-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Rihlati — Libyan smart travel platform (automation-first Smart Core Foundation)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @rihlati/shared-types && npm run build -w @rihlati/api",
+    "start": "npm run start -w @rihlati/api",
+    "dev": "npm run dev -w @rihlati/api",
+    "simulate": "npm run simulate -w @rihlati/api",
+    "test": "npm run simulate"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
