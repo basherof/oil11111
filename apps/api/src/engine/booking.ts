@@ -27,9 +27,10 @@ export class BookingService {
     private sm: StateMachine,
   ) {}
 
-  async createDraft(input: { customerName: string; customerPhone: string; serviceType: Booking['serviceType']; totalAmount: number; currency?: string; channel?: string; details?: any }): Promise<Booking> {
+  async createDraft(input: { customerId?: string; customerName: string; customerPhone: string; serviceType: Booking['serviceType']; totalAmount: number; currency?: string; channel?: string; details?: any }): Promise<Booking> {
     const booking = await this.store.insert<any>('bookings', {
       reference: displayRef(),
+      customerId: input.customerId,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
       serviceType: input.serviceType,

@@ -15,6 +15,31 @@ export async function login(email: string, password: string): Promise<{ token: s
   return { token, user };
 }
 
+/** Customer phone-OTP login (MOCK mode: code is always 123456; live SMS/WA OTP lands with integrations). */
+const otpStore = new Map<string, string>();
+
+export async function otpRequest(phone: string) {
+  if (!phone || phone.length < 8) throw new UnauthorizedException('Invalid phone number');
+  otpStore.set(phone, '123456'); // mock code
+  const core = await getCore();
+  await core.audit.log({ actorType: 'system', action: 'otp_requested', data: { phone } });
+  return { sent: true, channel: 'whatsapp(mock)', hint: 'Mock mode: the code is 123456' };
+}
+
+export async function otpVerify(phone: string, code: string, name?: string): Promise<{ token: string; user: AuthUser }> {
+  if (otpStore.get(phone) !== code) throw new UnauthorizedException('Wrong or expired code');
+  otpStore.delete(phone);
+  const core = await getCore();
+  let u = (await core.store.find<any>('users', { phone }))[0];
+  if (!u) {
+    u = await core.store.insert('users', { email: `${phone.replace(/\D/g, '')}@customer.rihlati.test`, phone, passwordHash: '-', name: name || 'عميل رحلتي', role: 'customer' });
+  }
+  const user: AuthUser = { id: u.id, email: u.email, name: u.name, role: 'customer' };
+  const token = jwt.sign({ ...user, phone }, core.config.jwtSecret, { expiresIn: '30d' });
+  await core.audit.log({ actorType: 'customer', actorId: u.id, action: 'otp_login', data: { phone } });
+  return { token, user };
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext): Promise<boolean> {

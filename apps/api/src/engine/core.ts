@@ -13,6 +13,7 @@ import { VisaService } from './visa';
 import { DocumentService } from './documents';
 import { KpiService } from './kpi';
 import { BookingService } from './booking';
+import { SupportService } from './support';
 import {
   MockAiProvider, MockEmailProvider, MockOcrProvider, MockPdfProvider,
   MockSupplierAdapter, MockWhatsAppProvider, SupplierRegistry,
@@ -55,6 +56,7 @@ export class Core {
   documents: DocumentService;
   kpi: KpiService;
   bookings: BookingService;
+  support: SupportService;
   suppliers: SupplierRegistry;
   providers: {
     whatsapp: MockWhatsAppProvider; email: MockEmailProvider; ocr: MockOcrProvider;
@@ -98,6 +100,7 @@ export class Core {
     this.documents = new DocumentService(this.store, this.audit, this.automation, this.exceptions, this.providers.pdf);
     this.kpi = new KpiService(this.store);
     this.bookings = new BookingService(this.store, this.audit, this.automation, this.exceptions, this.payments, this.documents, this.suppliers, this.providers.ai, this.stateMachine);
+    this.support = new SupportService(this.store, this.audit, this.bookings, this.stateMachine);
 
     // every state change fires its WhatsApp template automatically (doc 13 §13.12)
     this.stateMachine.onTransition((b, from, to) => this.notifications.onStateChange(b, from, to));

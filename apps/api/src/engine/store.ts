@@ -17,7 +17,9 @@ export type Collection =
   | 'artifacts'
   | 'visaApplications'
   | 'quotations'
-  | 'kpiSnapshots';
+  | 'kpiSnapshots'
+  | 'supportTickets'
+  | 'ticketMessages';
 
 export interface DataStore {
   readonly mode: 'memory' | 'postgres';

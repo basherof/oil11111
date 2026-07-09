@@ -38,6 +38,8 @@ h3{color:var(--navy);font-size:15px;margin-bottom:10px}
 <body>
 <header>
   <b>Rihlati<i>.</i> Smart Core</b>
+  <a href="/admin/portal.html" style="color:#fff9;font-size:11px">Customer portal</a>
+  <a href="/admin/support.html" style="color:#fff9;font-size:11px">Support console</a>
   <span class="mode" id="sysmode">…</span>
   <span class="mode" id="persist">…</span>
   <span style="flex:1"></span>
@@ -51,6 +53,7 @@ h3{color:var(--navy);font-size:15px;margin-bottom:10px}
   <button data-t="automation">🛠 Automation & Kill Switches</button>
   <button data-t="payments">💳 Payment Matching</button>
   <button data-t="ocr">🛂 OCR & Documents</button>
+  <button data-t="tickets">🎫 Support Tickets</button>
   <button data-t="simulator">🧪 Simulator</button>
   <button data-t="audit">📜 Audit Log</button>
 </nav>
@@ -132,6 +135,12 @@ async function render(){
     const [ocr,visa]=await Promise.all([api('GET','/api/documents/ocr'),api('GET','/api/visa-applications')]);
     el.innerHTML=`<div class="card"><h3>Passport OCR extractions</h3>${ocr.map(o=>`<pre>${esc(JSON.stringify({confidence:o.data.confidence,mrzOk:o.data.mrzChecksumOk,fields:o.data.fields},null,1))}</pre>`).join('')||'<p class="muted">none yet</p>'}</div>
     <div class="card"><h3>Visa applications & readiness</h3>${visa.map(v=>`<p><b>${esc(v.country)} ${esc(v.visaType)}</b> — readiness <b>${v.readinessScore}%</b> · file: <span class="pill ${v.fileStatus==='approved_by_officer'?'p-ok':'p-warn'}">${esc(v.fileStatus)}</span></p><table><tr><th>Document</th><th>Status</th><th>Reason</th></tr>${v.checklist.map(c=>`<tr><td>${esc(c.label)}</td><td><span class="pill ${c.status.includes('accept')||c.status.includes('approved')?'p-ok':c.status==='missing'?'p-bad':'p-warn'}">${esc(c.status)}</span></td><td class="muted">${esc(c.reasonEn||'')}</td></tr>`).join('')}</table>`).join('')||'<p class="muted">none yet</p>'}</div>`;
+  }
+  if(TAB==='tickets'){
+    const rows=await api('GET','/api/support/tickets');
+    el.innerHTML=`<div class="hint">Full conversation view + booking context is in the <a href="/admin/support.html"><b>Support Console</b></a>. Bot escalations land here automatically.</div>
+    <div class="card"><table><tr><th>Number</th><th>Customer</th><th>Subject</th><th>Category</th><th>Priority</th><th>Status</th><th>Channel</th></tr>
+    ${rows.map(t=>`<tr><td><b>${esc(t.number)}</b></td><td>${esc(t.customerName)}</td><td>${esc(t.subject)}</td><td>${esc(t.category)}</td><td><span class="pill ${t.priority==='urgent'?'p-bad':'p-grey'}">${esc(t.priority)}</span></td><td><span class="pill ${t.status==='resolved'?'p-ok':'p-warn'}">${esc(t.status)}</span></td><td class="muted">${esc(t.channel)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">none</td></tr>'}</table></div>`;
   }
   if(TAB==='simulator'){
     const names=['Successful automatic booking','Payment unmatched','Wrong payment amount','OCR low confidence','Passport expiry risk','Supplier error + failover','Supplier price change','Visa risk','Missing document → officer approval','Refund request','Medical case','Customer complaint','WhatsApp/PDF failure'];

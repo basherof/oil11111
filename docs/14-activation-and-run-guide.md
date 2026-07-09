@@ -36,8 +36,10 @@ npm run simulate            # expect: "Simulator result: 13/13 passed"
 
 # 6. Start the backend
 npm run dev                 # or: npm run build && npm start
-# → API:           http://localhost:3000
-# → Admin console: http://localhost:3000/admin/admin.html
+# → API:              http://localhost:3000
+# → Customer portal:  http://localhost:3000/admin/portal.html   (AR/EN, RTL)
+# → Ops console:      http://localhost:3000/admin/admin.html
+# → Support console:  http://localhost:3000/admin/support.html
 ```
 
 **Database setup (optional, PostgreSQL mode)** — mock/in-memory is the tested default for v0.1; postgres persistence is included as *experimental*:
@@ -164,6 +166,16 @@ curl localhost:3000/health                              # {"status":"ok","system
 | PDFs generated/mocked | booking detail → wallet/artifacts | `pdf:flight_ticket` artifact with `mock://` fileRef |
 | Trip Wallet records | `GET /api/bookings/:id` → `wallet` | ticket/voucher items, `offlineCached: true` |
 | KPIs calculated | Overview tab / `GET /api/kpi` | touchless rate, match rates, top exception causes |
+
+## E2. The three consoles (v0.2)
+
+| Console | URL | Login | What it does |
+|---|---|---|---|
+| **Customer portal** (بوابة العملاء) | `/admin/portal.html` | Phone OTP — any phone, mock code **123456** | Bilingual AR-first (full RTL) / EN. New booking → AI quotation + 3 options → passport scan (OCR) → mandatory details confirmation → payment reference + "I paid" → live status timeline → Trip Wallet → visa file with readiness score + uploads → AI planner chat → AI support bot with human escalation → refund request |
+| **Ops console** (المشغّلون) | `/admin/admin.html` | staff logins (§5) | Exception Queue with **one-click resolutions that run the whole pipeline** (e.g. confirm payment → supplier → ticket → PDF → wallet in one click), bookings, automation levels + kill switches, payment matching board, OCR/visa review, support tickets list, simulator, audit, KPIs |
+| **Support console** (خدمة العملاء) | `/admin/support.html` | `support@rihlati.test` (or any staff) | Ticket queue with filters, full conversation view (customer/bot/staff + 🔒 internal notes), **booking context beside the chat** (state, payments, open exceptions, wallet), resolve/close. Bot escalations (anger, refund, "agent/موظف") land here automatically as urgent tickets |
+
+End-to-end demo (2 minutes): portal → login with OTP 123456 → new booking → scan passport → confirm → "I paid" with the exact amount → ops console (finance login) → Exception Queue → **Confirm payment manually** → back to portal: ticket in Trip Wallet, timeline complete. Then in the portal support chat type «موظف» → the ticket appears in the support console.
 
 ## 5. Test login credentials
 

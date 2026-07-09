@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { getCore } from '../engine/core';
 import { Simulator } from '../simulator/simulator';
-import { AuthGuard, login } from './auth';
+import { AuthGuard, login, otpRequest, otpVerify } from './auth';
 
 /** Engine rule violations (illegal transitions, A1 locks, role routing) → HTTP 400, not 500. */
 async function guard<T>(fn: () => Promise<T>): Promise<T> {
@@ -22,6 +22,14 @@ export class PublicController {
   async login(@Body() body: { email: string; password: string }) {
     return login(body.email, body.password);
   }
+  @Post('auth/otp/request')
+  async otpReq(@Body() body: { phone: string }) {
+    return otpRequest(body.phone);
+  }
+  @Post('auth/otp/verify')
+  async otpVer(@Body() body: { phone: string; code: string; name?: string }) {
+    return otpVerify(body.phone, body.code, body.name);
+  }
 }
 
 @Controller('api')
@@ -34,7 +42,22 @@ export class AdminController {
   }
   @Post('exceptions/:id/resolve')
   async resolve(@Param('id') id: string, @Body() body: { action: string; note?: string }, @Req() req: any) {
-    return guard(async () => (await getCore()).exceptions.resolve(id, body.action as any, { id: req.user.id, role: req.user.role }, body.note));
+    return guard(async () => {
+      const core = await getCore();
+      const res = await core.exceptions.resolve(id, body.action as any, { id: req.user.id, role: req.user.role }, body.note);
+      // post-resolution automation: one click takes the booking all the way (doc 13 §13.3)
+      const bookingId = (res.exception as any).bookingId;
+      try {
+        if (body.action === 'confirm_payment_manually') {
+          await core.payments.confirmManually(bookingId, req.user.id);
+          const b = await core.stateMachine.getBooking(bookingId);
+          if (b.state === 'awaiting_payment') await core.stateMachine.transition(bookingId, 'payment_received', 'staff', { actorId: req.user.id });
+          await core.bookings.fulfil(bookingId);
+        }
+        if (body.action === 'retry_supplier' || body.action === 'switch_supplier') await core.bookings.fulfil(bookingId);
+      } catch { /* pipeline continues via queue if a later step raises */ }
+      return { ...res, bookingState: (await core.stateMachine.getBooking(bookingId)).state };
+    });
   }
   @Post('exceptions/:id/note')
   async note(@Param('id') id: string, @Body() body: { note: string }, @Req() req: any) {
@@ -113,6 +136,36 @@ export class AdminController {
   @Get('kpi/backlog')
   async backlog() {
     return (await getCore()).kpi.weeklyAutomationBacklog();
+  }
+
+  // ---- Support tickets (staff console) ----
+  @Get('support/tickets')
+  async tickets(@Query('status') status?: string) {
+    return (await getCore()).support.tickets(status ? { status } : {});
+  }
+  @Get('support/tickets/:id')
+  async ticketDetail(@Param('id') id: string) {
+    const core = await getCore();
+    const ticket: any = await core.store.get('supportTickets', id);
+    let bookingContext: any = null;
+    if (ticket?.bookingId) {
+      const b = await core.stateMachine.getBooking(ticket.bookingId).catch(() => null);
+      if (b) bookingContext = {
+        booking: b,
+        payments: await core.store.find('payments', { bookingId: b.id }),
+        exceptions: await core.store.find('exceptions', { bookingId: b.id }),
+        wallet: await core.documents.wallet(b.id),
+      };
+    }
+    return { ticket, messages: await core.support.messages(id), bookingContext };
+  }
+  @Post('support/tickets/:id/reply')
+  async staffReply(@Param('id') id: string, @Body() body: { body: string; internal?: boolean }, @Req() req: any) {
+    return guard(async () => (await getCore()).support.reply(id, 'staff', req.user.id, body.body, body.internal));
+  }
+  @Post('support/tickets/:id/status')
+  async ticketStatus(@Param('id') id: string, @Body() body: { status: string }, @Req() req: any) {
+    return guard(async () => (await getCore()).support.setStatus(id, body.status as any, req.user.id));
   }
 
   // ---- Simulator (isolated cores; does not touch live data) ----
