@@ -1,0 +1,400 @@
+# 5 — Database & Data Model (PostgreSQL)
+
+Conventions: `id UUID PK`, `created_at/updated_at timestamptz` on every table (omitted below), soft-delete via `deleted_at` on user-facing data, money as `numeric(12,2)` + `currency char(3)` (LYD/USD/EUR/TRY), bilingual content as `*_ar` / `*_en` columns.
+
+## 5.1 ER overview (core)
+
+```mermaid
+erDiagram
+    users ||--o{ traveler_profiles : saves
+    users ||--o{ bookings : places
+    bookings ||--|{ booking_items : contains
+    booking_items ||--o{ booking_passengers : "for"
+    traveler_profiles ||--o{ booking_passengers : "used as"
+    bookings ||--o{ payments : "paid by"
+    bookings ||--o{ documents : attaches
+    bookings ||--o{ status_history : logs
+    users ||--o{ support_tickets : opens
+    support_tickets ||--o{ ticket_messages : has
+    users ||--o{ whatsapp_threads : linked
+    agents ||--o{ bookings : "books for clients"
+    companies ||--o{ corporate_travel_requests : submits
+    corporate_travel_requests ||--o| bookings : becomes
+    packages ||--o{ booking_items : "instance of"
+    visa_products ||--o{ visa_applications : "applied via"
+    visa_applications ||--o{ documents : requires
+    users ||--o| wallets : owns
+    wallets ||--o{ ledger_entries : records
+    users ||--o| loyalty_accounts : earns
+```
+
+## 5.2 Identity & access
+
+```sql
+users (id, phone UNIQUE, email, password_hash, full_name_ar, full_name_en,
+       nationality char(2), preferred_locale enum('ar','en'), avatar_url,
+       user_type enum('customer','agent_user','corporate_user','staff'),
+       phone_verified_at, email_verified_at, two_fa_secret, status,
+       marketing_opt_in bool, last_login_at)
+
+roles (id, code UNIQUE, name_ar, name_en)          -- super_admin, booking_manager,
+                                                   -- flight_agent, hotel_agent, visa_officer,
+                                                   -- medical_officer, support_agent, finance_officer,
+                                                   -- marketing_officer, corporate_am, agent_manager
+permissions (id, code UNIQUE, description)          -- bookings.read, payments.confirm, refunds.approve ...
+role_permissions (role_id FK, permission_id FK)
+user_roles (user_id FK, role_id FK)
+
+otp_codes (id, phone, code_hash, purpose, expires_at, consumed_at, attempts)
+sessions (id, user_id FK, refresh_token_hash, device_info, ip, expires_at, revoked_at)
+audit_logs (id, actor_id FK users, action, entity_type, entity_id, before jsonb, after jsonb, ip)
+```
+
+## 5.3 Traveler data
+
+```sql
+traveler_profiles (id, owner_user_id FK, relation enum('self','spouse','child','parent','other'),
+       first_name, last_name,                -- exactly as in passport (Latin)
+       full_name_ar, gender, date_of_birth, nationality char(2),
+       passport_number, passport_issue_date, passport_expiry_date,
+       passport_country char(2), phone, email, notes)
+       -- passport fields encrypted at rest (pgcrypto/app-level)
+
+user_documents (id, user_id FK, traveler_profile_id FK NULL,
+       doc_type enum('passport_copy','photo','bank_statement','employment_letter',
+                     'invitation_letter','hotel_booking','flight_reservation',
+                     'travel_insurance','previous_visa','medical_report','other'),
+       file_key, file_name, mime, size_bytes, uploaded_via enum('app','web','whatsapp','staff'),
+       review_status enum('received','missing','needs_correction','accepted','rejected','under_review'),
+       review_note, reviewed_by FK users, reviewed_at)
+```
+
+## 5.4 Unified booking engine
+
+```sql
+bookings (id, reference varchar(10) UNIQUE,       -- display ref, e.g. RHL-8K2M4
+       payment_reference varchar(16) UNIQUE,       -- e.g. TRV-2026-000482 (see payment_references)
+       customer_id FK users, agent_id FK agents NULL, company_id FK companies NULL,
+       channel enum('app','web','agent','corporate','staff','ai'),
+       -- Expanded state model (authoritative: 13-execution-plan-core-mvp.md §13.2)
+       status enum(
+         -- green path
+         'draft','ai_planned','quotation_generated','awaiting_customer_confirmation',
+         'awaiting_payment','payment_received','supplier_confirmation_pending',
+         'confirmed','ticket_issued','voucher_issued','documents_generated',
+         'documents_delivered','pre_travel_reminders_active','in_travel',
+         'completed','review_requested','closed',
+         -- exception states (each requires a bound open exception record)
+         'exc_payment_unmatched','exc_payment_failed','exc_ocr_low_confidence',
+         'exc_passport_issue','exc_name_mismatch','exc_supplier_error',
+         'exc_supplier_price_changed','exc_visa_risk','exc_missing_document',
+         'exc_refund_requested','exc_refund_dispute','exc_medical_case',
+         'exc_high_value_booking','exc_customer_complaint','exc_sentiment_alert',
+         'exc_staff_approval_required',
+         -- terminal/administrative
+         'cancelled','refunded','failed'),
+       resume_state varchar NULL,                  -- where the machine resumes after exception clears
+       currency, subtotal, service_fee, tax, discount, total,
+       amount_paid, payment_status enum('unpaid','partial','paid','refunded'),
+       assigned_staff_id FK users, source_quotation_id FK quotations NULL, notes_internal)
+
+booking_items (id, booking_id FK, item_type enum('flight','hotel','package','visa','esim',
+       'insurance','transfer','medical','business','tour','other'),
+       status (same enum as bookings),           -- per-item lifecycle
+       title_ar, title_en, service_date_start, service_date_end,
+       supplier_id FK suppliers NULL, supplier_ref, cost_price, sell_price, currency,
+       details jsonb)                             -- type-specific payload, validated per type:
+       -- flight: {segments:[{from,to,dep,arr,airline,flight_no,cabin,baggage}], pnr, fare_rules,
+       --          refundable, change_fee, price_confirmed bool}
+       -- hotel:  {hotel_name, city, checkin, checkout, rooms:[{type,board,guests}],
+       --          free_cancel_until, address, geo:{lat,lng}}
+       -- transfer: {airport, flight_no, arrival_time, vehicle_type, hotel, pax, bags, signboard}
+       -- esim: {country, data_gb, days, qr_code_key, provider_order_id}
+
+booking_passengers (id, booking_item_id FK, traveler_profile_id FK NULL,
+       first_name, last_name, gender, date_of_birth, nationality,
+       passport_number, passport_issue_date, passport_expiry_date,
+       pax_type enum('adult','child','infant'), ticket_number NULL)
+
+status_history (id, entity_type enum('booking','booking_item','visa_application',
+       'support_ticket','payment'), entity_id, from_status, to_status,
+       actor_id FK users NULL, actor_type enum('customer','staff','system','supplier'), note)
+
+suppliers (id, name, type enum('gds','hotel_api','esim','insurance','transport',
+       'hospital','manual'), adapter_code, contact jsonb, active bool)
+
+flight_search_requests (id, user_id FK NULL, origin, destination, depart_date, return_date,
+       trip_type, adults, children, infants, cabin, airline_pref, direct_only,
+       flexible_dates bool, results_count, session_id)   -- analytics + abandoned-search reminders
+```
+
+## 5.5 Catalog: packages, destinations, exhibitions, visas
+
+```sql
+packages (id, slug, type enum('tourism','medical','shopping','family','umrah','visa_assist',
+       'business','student','honeymoon','holiday'),
+       title_ar, title_en, summary_ar, summary_en, country char(2), city,
+       nights int, base_price_pp, currency, includes jsonb, excludes jsonb,
+       itinerary jsonb,                          -- [{day:1, title_ar, title_en, body_ar, body_en}]
+       hero_image_key, gallery jsonb, options jsonb,   -- optional tours, upgrades
+       visa_support bool, active bool, featured bool, valid_from, valid_to)
+
+destinations (id, slug, name_ar, name_en, country char(2),
+       about_ar, about_en, best_time_ar, best_time_en, visa_info_ar, visa_info_en,
+       est_budget_note, halal_food_ar, halal_food_en, shopping_ar, shopping_en,
+       family_tips_ar, family_tips_en, medical_info_ar, medical_info_en,
+       gallery jsonb, attractions jsonb, flight_routes jsonb, geo jsonb, active bool)
+
+exhibitions (id, name_ar, name_en, industry, country, city, venue,
+       starts_on, ends_on, registration_url, description_ar, description_en,
+       suggested_hotels jsonb, visa_product_id FK NULL, active bool)
+
+visa_products (id, country char(2), visa_type enum('tourist','schengen','student','medical',
+       'business','exhibition','transit','other'),
+       title_ar, title_en, requirements jsonb,   -- checklist items with doc_type mapping
+       passport_rules_ar/-en, bank_statement_rules_ar/-en, processing_time_note,
+       warnings_ar/-en, service_fee, active bool)
+
+visa_applications (id, booking_item_id FK, visa_product_id FK, applicant_profile_id FK,
+       status enum('draft','docs_pending','under_review','submitted','appointment_set',
+                   'approved','rejected','cancelled'),
+       appointment_at, appointment_place, decision_note, officer_id FK users)
+
+visa_application_documents (id, visa_application_id FK, user_document_id FK,
+       checklist_key, review_status, review_note)
+```
+
+## 5.6 Medical & business travel
+
+```sql
+medical_requests (id, booking_item_id FK NULL, user_id FK,
+       destination_country, specialty, preferred_city, hospital_pref,
+       needs_translator bool, needs_pickup bool, hotel_near_hospital bool,
+       companions int, estimated_cost, status enum('new','reviewing','package_sent',
+       'appointment_set','confirmed','completed','cancelled'),
+       officer_id FK users, appointment jsonb, notes)
+       -- medical reports live in user_documents(doc_type='medical_report')
+
+business_requests (id, booking_item_id FK NULL, user_id FK, company_id FK NULL,
+       exhibition_id FK NULL, purpose enum('exhibition','conference','meeting',
+       'delegation','factory_visit','supplier_visit'),
+       destination, dates jsonb, travelers int, needs jsonb, status, notes)
+```
+
+## 5.7 Payments, wallet, invoicing (double-entry)
+
+```sql
+payments (id, booking_id FK, method enum('cash_office','bank_transfer','local_card',
+       'gateway','mobile_wallet','agent_balance','corporate_invoice','wallet','deposit'),
+       direction enum('in','out'),                -- out = refund
+       amount, currency, status enum('pending','under_review','confirmed','rejected','refunded'),
+       receipt_no UNIQUE, gateway_ref, transfer_receipt_key,  -- uploaded receipt image
+       confirmed_by FK users, confirmed_at, note)
+
+wallets (id, owner_type enum('user','agent','company'), owner_id, currency,
+       balance numeric(14,2), credit_limit numeric(14,2) DEFAULT 0, status)
+
+ledger_entries (id, wallet_id FK, entry_type enum('topup','booking_charge','refund',
+       'commission','cashback','adjustment','invoice_payment'),
+       debit, credit, balance_after, reference_type, reference_id, note, created_by)
+
+invoices (id, number UNIQUE, bill_to_type enum('user','agent','company'), bill_to_id,
+       booking_id FK NULL, period daterange NULL,   -- monthly corporate invoices
+       lines jsonb, subtotal, tax, total, currency,
+       status enum('draft','issued','paid','overdue','void'), due_date, pdf_key)
+
+refund_requests (id, booking_id FK, requested_by FK users, reason, amount,
+       status enum('requested','approved','rejected','processed'), processed_payment_id FK)
+```
+
+## 5.8 Agents & corporate
+
+```sql
+agents (id, name, city, license_no, owner_user_id FK users, wallet_id FK,
+       commission_scheme jsonb,                  -- per service type: % or flat
+       markup_allowed bool, white_label jsonb,   -- logo/name on printed vouchers
+       status enum('pending','active','suspended'))
+agent_users (agent_id FK, user_id FK, role enum('owner','staff'))
+agent_commissions (id, agent_id FK, booking_id FK, base_amount, commission_amount,
+       status enum('pending','earned','paid','reversed'), paid_ledger_entry_id FK)
+
+companies (id, name_ar, name_en, tax_id, address, wallet_id FK,
+       travel_policy jsonb,                      -- max stars, airlines, approval thresholds
+       preferred_hotels jsonb, preferred_airlines jsonb, billing_cycle, status)
+company_employees (id, company_id FK, user_id FK NULL, full_name, department,
+       grade, email, phone, traveler_profile_id FK, active bool)
+corporate_travel_requests (id, company_id FK, employee_id FK, requested_by FK users,
+       purpose, destination, dates jsonb, estimate,
+       status enum('draft','pending_approval','approved','rejected','booked','cancelled'),
+       booking_id FK NULL)
+corporate_approvals (id, request_id FK, approver_id FK users, step int,
+       decision enum('pending','approved','rejected'), note, decided_at)
+```
+
+## 5.9 Support, chat, WhatsApp
+
+```sql
+support_tickets (id, number UNIQUE, user_id FK, booking_id FK NULL,
+       category enum('flight','hotel','payment','visa_docs','medical','change_cancel',
+                     'refund','technical','general'),
+       priority enum('low','normal','high','urgent'),
+       status enum('open','pending_customer','pending_staff','resolved','closed'),
+       assigned_to FK users, resolution_note, sla_due_at)
+ticket_messages (id, ticket_id FK, sender_type enum('customer','staff','system'),
+       sender_id, body, attachments jsonb, internal bool)   -- internal notes hidden from customer
+
+whatsapp_threads (id, wa_phone, user_id FK NULL, booking_id FK NULL,
+       assigned_to FK users NULL, status enum('open','closed'), last_message_at)
+whatsapp_messages (id, thread_id FK, direction enum('in','out'), wa_message_id,
+       msg_type enum('text','image','document','template','interactive'),
+       body, media_key NULL, template_name NULL, status enum('queued','sent',
+       'delivered','read','failed'), error)
+whatsapp_templates (id, name, locale, category, body, variables jsonb, approved bool)
+
+chat_conversations (id, user_id FK, kind enum('support','ai_assistant'), status)
+chat_messages (id, conversation_id FK, role enum('user','assistant','staff','system'),
+       body, payload jsonb,                      -- AI: structured trip options, buttons
+       tokens_in, tokens_out)
+```
+
+## 5.10 Notifications, loyalty, marketing
+
+```sql
+notifications (id, user_id FK, type varchar,      -- booking_confirmed, payment_reminder,
+       -- doc_missing, passport_expiry, flight_t24, checkin, hotel_checkin, visa_appt,
+       -- esim_activation, return_flight, offer, loyalty_update ...
+       title_ar, title_en, body_ar, body_en, data jsonb,
+       channels jsonb,                            -- {push:sent, email:sent, wa:delivered, sms:skipped}
+       read_at, scheduled_for)
+
+device_tokens (id, user_id FK, platform enum('ios','android','web'), token, last_seen_at)
+
+loyalty_accounts (id, user_id FK, tier enum('silver','gold','vip','corporate','agent'),
+       points_balance int, lifetime_points int)
+loyalty_transactions (id, account_id FK, points int, reason enum('flight','hotel','package',
+       'referral','corporate','repeat','redeem','expire','adjust'),
+       booking_id FK NULL, expires_at)
+referrals (id, referrer_user_id FK, referred_user_id FK, status, reward_points)
+
+promotions (id, code UNIQUE NULL, title_ar/-en, kind enum('percent','flat','service_fee_off'),
+       value, applies_to jsonb, min_total, usage_limit, per_user_limit,
+       valid_from, valid_to, active bool)
+promotion_redemptions (id, promotion_id FK, user_id FK, booking_id FK, amount_saved)
+```
+
+## 5.11 Quotations & PDFs
+
+```sql
+quotations (id, number UNIQUE, customer_name, user_id FK NULL, created_by FK users,
+       source enum('staff','ai_assistant','trip_builder','agent'),
+       destination, travel_dates jsonb, travelers int, package_type,
+       lines jsonb,                               -- services + prices
+       total, currency, validity_date,
+       body_ar text, body_en text,                -- AI-generated professional text
+       status enum('draft','sent','viewed','accepted','expired','converted'),
+       booking_id FK NULL, pdf_ar_key, pdf_en_key, whatsapp_sent_at, email_sent_at)
+
+generated_documents (id, kind enum('ticket','hotel_voucher','quotation','visa_checklist',
+       'invoice','receipt','trip_plan','medical_package','business_package','report'),
+       locale, entity_type, entity_id, file_key, version int)
+
+trip_plans (id, user_id FK, source enum('ai','manual'), title, destination,
+       dates jsonb, travelers jsonb, budget, style enum('economy','comfortable','luxury'),
+       interests jsonb, plan jsonb,               -- overview, options, itinerary, docs, notes, map pins
+       pdf_key, quotation_id FK NULL)
+```
+
+## 5.12 Automation, exceptions & document AI
+
+```sql
+exceptions (id, type enum(                         -- authoritative 17 types (doc 13 §13.3)
+       'payment_unmatched','payment_failed','supplier_error','supplier_price_changed',
+       'ocr_low_confidence','passport_expiry_risk','name_mismatch','visa_risk',
+       'missing_document','refund_requested','refund_dispute','medical_case',
+       'high_value_booking','customer_complaint','sentiment_alert',
+       'whatsapp_delivery_failed','pdf_generation_failed'),
+       severity enum('low','normal','high','critical'),
+       entity_type, entity_id,                     -- booking_item, payment, visa_application…
+       booking_state_at_creation, next_state_after_resolution,
+       root_cause text,
+       context jsonb,                              -- auto-attached evidence (OCR diff, supplier payload…)
+       suggested_actions jsonb,                    -- one-click resolutions offered to staff
+       routed_role_id FK roles, assigned_to FK users NULL,
+       status enum('open','in_progress','waiting_customer','resolved','escalated'),
+       sla_due_at, escalated_at, resolution_action, resolution_note, resolved_by, resolved_at,
+       internal_notes jsonb)
+       -- resolving an exception resumes the bound state machine automatically
+
+automation_settings (workflow_key PK,              -- 16 workflows (doc 13 §13.4): ai_trip_planning,
+       -- quotation_generation, passport_ocr, payment_matching, visa_precheck, whatsapp_messages,
+       -- pdf_generation, supplier_confirmation, ticket_issuing, voucher_sending, esim_delivery,
+       -- insurance_delivery, refund_initiation, agent_commission, corporate_invoice, loyalty_points
+       level enum('A0','A1','A2','A3'),
+       permanent_a1 bool DEFAULT false,            -- visa approval, refunds, medical: locked at A1
+       confidence_thresholds jsonb,                -- {high:0.90, medium:0.70} per workflow
+       params jsonb,                               -- ceilings, hold minutes, veto windows
+       kill_switch_active bool DEFAULT false, kill_switch_reason, kill_switch_by, kill_switch_at,
+       updated_by, updated_at)                     -- every change versioned via audit_logs
+
+kill_switch_scopes (id, scope enum('workflow','supplier','payment_method','package',
+       'destination','agent','company'), scope_ref, active bool, reason, activated_by, activated_at)
+
+automation_decisions (id, workflow_key, entity_type, entity_id,
+       decision enum('auto_continue','customer_confirm','staff_veto_window','exception'),
+       confidence numeric(4,3), threshold_high, threshold_medium,   -- thresholds AT decision time
+       model_or_rule, inputs_digest, outcome, created_at)           -- audit reproducibility
+
+customer_confirmations (id, booking_id FK, user_id FK,
+       confirmed_fields jsonb,                     -- snapshot: names, passport nos, dates, route,
+                                                   -- baggage, hotel, policies, total, validity, T&C
+       locale, ip, user_agent, confirmed_at)       -- mandatory before payment/issuing (doc 13 §13.11)
+
+kpi_snapshots (id, period daterange, metrics jsonb, generated_at)
+       -- touchless_rate, exception_rate, avg_resolution_min, ocr_success, payment_match_rate,
+       -- supplier_failure_rate, wa_delivery_rate, pdf_success_rate, conversion, refund_rate…
+
+automation_backlog_reports (id, week daterange, top_causes jsonb, generated_at, reviewed_by NULL)
+
+automation_rules (id, name, trigger_event,         -- ECA rules: notifications, escalations, guards
+       conditions jsonb, actions jsonb, enabled bool, test_mode bool,
+       created_by, version int)
+
+payment_references (id, booking_id FK, reference varchar(16) UNIQUE,  -- TRV-2026-000482
+       expected_amount, currency,
+       status enum('awaiting','matched','partial','overpaid','expired'),
+       amount_received NULL, difference NULL,      -- wrong-amount handling (doc 13 §13.8)
+       suggested_action enum('request_remaining','approve_partial','refund_extra',
+                             'finance_review') NULL)
+
+ocr_extractions (id, user_document_id FK, engine, kind enum('passport_mrz','receipt','generic_doc'),
+       fields jsonb,                               -- extracted values + per-field confidence
+       overall_confidence numeric(4,3), checksum_ok bool NULL,
+       outcome enum('auto_accepted','corrected','exception'), corrected_by NULL)
+
+doc_precheck_results (id, visa_application_document_id FK,
+       checks jsonb,                               -- {readable:ok, type_match:ok, months_covered:2/3…}
+       verdict enum('pass','needs_correction','uncertain'),
+       reason_ar, reason_en, model, created_at)
+
+-- visa_applications gains: readiness_score int, score_breakdown jsonb, last_chase_at
+-- notifications engine rules live in automation_rules (trigger_event = state change / schedule)
+-- ops metrics view: touchless_rate, exceptions_per_100, median_resolution_minutes (materialized)
+```
+
+## 5.13 Settings & system
+
+```sql
+settings (key PK, value jsonb, updated_by)        -- fees, bank accounts, SLA hours, feature flags
+exchange_rates (id, base, quote, rate, fetched_at)
+faq_articles (id, category, question_ar/-en, answer_ar/-en, embedding vector NULL) -- AI RAG
+banners (id, placement, image_key, title_ar/-en, link, active, sort)
+```
+
+## 5.14 Indexing & integrity highlights
+
+- `bookings(reference)`, `bookings(customer_id, status)`, `booking_items(booking_id)`, `payments(booking_id, status)`, `whatsapp_threads(wa_phone)`, `notifications(user_id, read_at)`.
+- Partial index for operational queues: `booking_items(status) WHERE status IN ('processing','waiting_supplier','requires_action')`; exception work surface: `exceptions(routed_role_id, status, sla_due_at) WHERE status IN ('open','in_progress')`.
+- Integrity: `requires_action` requires an open `exceptions` row (enforced in service layer + periodic consistency check); `payment_references.reference` generated collision-free (base32, no ambiguous chars).
+- `CHECK (passport_expiry_date > passport_issue_date)`; app-level rule warns when expiry < return date + 6 months.
+- Ledger invariant: `balance_after` maintained in a transaction with `SELECT … FOR UPDATE` on the wallet row; wallet balance never derived from anything but the ledger.
+- Row-level security (or strict service-layer scoping) so agents/companies only see their own bookings.

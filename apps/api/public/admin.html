@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rihlati Smart Core — Admin</title>
+<style>
+:root{--navy:#0B2545;--royal:#1D4E89;--gold:#C9A227;--turq:#2EC4B6;--sand:#F7F5F0;--ink:#1A1D23;--ink5:#5B6472;--ok:#1E9E5A;--warn:#E0A100;--bad:#D64545;--line:#E7E3DA}
+*{box-sizing:border-box;margin:0;font-family:Inter,"IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif}
+body{background:var(--sand);color:var(--ink)}
+header{background:var(--navy);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header b{font-size:17px}header b i{color:var(--gold);font-style:normal}
+.mode{font-size:11px;font-weight:700;border-radius:99px;padding:3px 10px;background:#ffffff22}
+nav{display:flex;gap:4px;background:#fff;border-bottom:1px solid var(--line);padding:6px 16px;flex-wrap:wrap}
+nav button{border:none;background:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink5);cursor:pointer;border-radius:9px}
+nav button.on{background:var(--navy);color:#fff}
+main{padding:18px;max-width:1200px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .l{font-size:11px;color:var(--ink5)}.kpi .v{font-size:20px;font-weight:800;color:var(--navy)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--ink5);font-size:10.5px;text-transform:uppercase;padding:6px;border-bottom:1px solid var(--line)}
+td{padding:8px 6px;border-bottom:1px solid #F0EDE5;vertical-align:top}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;border-radius:99px;padding:3px 9px;white-space:nowrap}
+.p-ok{background:#E6F6EE;color:var(--ok)}.p-warn{background:#FBF1D9;color:#8a6400}.p-bad{background:#FBE7E7;color:var(--bad)}.p-blue{background:#E8F0FB;color:var(--royal)}.p-grey{background:#EEE;color:var(--ink5)}
+button.act{background:var(--royal);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;margin:2px}
+button.act.bad{background:var(--bad)}button.act.ok{background:var(--ok)}button.act.ghost{background:#fff;color:var(--royal);border:1.5px solid var(--royal)}
+select,input{border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px}
+#login{max-width:360px;margin:80px auto}
+#login input{width:100%;margin-bottom:10px}
+.muted{color:var(--ink5);font-size:12px}
+pre{background:#F4F2EC;border-radius:8px;padding:10px;font-size:11px;overflow:auto;max-height:320px}
+h3{color:var(--navy);font-size:15px;margin-bottom:10px}
+.hint{background:#E8F0FB;border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:12px;color:var(--royal)}
+</style>
+</head>
+<body>
+<header>
+  <b>Rihlati<i>.</i> Smart Core</b>
+  <a href="/admin/portal.html" style="color:#fff9;font-size:11px">Customer portal</a>
+  <a href="/admin/support.html" style="color:#fff9;font-size:11px">Support console</a>
+  <span class="mode" id="sysmode">…</span>
+  <span class="mode" id="persist">…</span>
+  <span style="flex:1"></span>
+  <span id="who" class="muted" style="color:#fff9"></span>
+  <button class="act ghost" id="logout" style="display:none">Logout</button>
+</header>
+<nav id="tabs" style="display:none">
+  <button data-t="overview" class="on">📊 Overview</button>
+  <button data-t="exceptions">⚡ Exception Queue</button>
+  <button data-t="bookings">🧾 Bookings</button>
+  <button data-t="automation">🛠 Automation & Kill Switches</button>
+  <button data-t="payments">💳 Payment Matching</button>
+  <button data-t="ocr">🛂 OCR & Documents</button>
+  <button data-t="tickets">🎫 Support Tickets</button>
+  <button data-t="simulator">🧪 Simulator</button>
+  <button data-t="audit">📜 Audit Log</button>
+</nav>
+<main>
+  <div id="login" class="card">
+    <h3>Sign in</h3>
+    <input id="email" placeholder="Email" value="admin@rihlati.test">
+    <input id="password" type="password" placeholder="Password" value="Admin@12345">
+    <button class="act" style="width:100%" onclick="doLogin()">Login</button>
+    <p class="muted" style="margin-top:10px">Test credentials: see docs/14-activation-and-run-guide.md §5</p>
+  </div>
+  <div id="app" style="display:none"></div>
+</main>
+<script>
+let TOKEN=localStorage.getItem('token')||'',USER=JSON.parse(localStorage.getItem('user')||'null'),TAB='overview';
+const $=s=>document.querySelector(s);
+const api=async(m,p,b)=>{const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.message||r.status);return j};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function doLogin(){try{const r=await api('POST','/auth/login',{email:$('#email').value,password:$('#password').value});TOKEN=r.token;USER=r.user;localStorage.setItem('token',TOKEN);localStorage.setItem('user',JSON.stringify(USER));boot()}catch(e){alert('Login failed: '+e.message)}}
+$('#logout').onclick=()=>{localStorage.clear();location.reload()};
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.t;document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));render()});
+async function boot(){
+  const h=await api('GET','/health');
+  $('#sysmode').textContent='mode: '+h.systemMode;$('#persist').textContent='store: '+h.persistence;
+  if(!TOKEN)return;
+  $('#login').style.display='none';$('#app').style.display='block';$('#tabs').style.display='flex';$('#logout').style.display='inline-block';
+  $('#who').textContent=USER?`${USER.name} · ${USER.role}`:'';
+  render();
+}
+const pill=s=>({open:'p-warn',in_progress:'p-blue',escalated:'p-bad',resolved:'p-ok'})[s]||'p-grey';
+const spill=s=>s.startsWith('exc_')?'p-bad':(['pre_travel_reminders_active','documents_delivered','confirmed','ticket_issued','closed','completed'].includes(s)?'p-ok':'p-blue');
+async function render(){
+  const el=$('#app');
+  try{
+  if(TAB==='overview'){
+    const [k,h]=await Promise.all([api('GET','/api/kpi'),api('GET','/health')]);
+    const bl=await api('GET','/api/kpi/backlog');
+    el.innerHTML=`<div class="kpis">
+      <div class="kpi"><div class="l">Touchless rate</div><div class="v">${k.touchlessRate===null?'—':Math.round(k.touchlessRate*100)+'%'}</div></div>
+      <div class="kpi"><div class="l">Bookings</div><div class="v">${k.bookings.total}</div></div>
+      <div class="kpi"><div class="l">Open exceptions</div><div class="v">${k.openExceptions}</div></div>
+      <div class="kpi"><div class="l">Avg resolution (min)</div><div class="v">${k.avgExceptionResolutionMin}</div></div>
+      <div class="kpi"><div class="l">Payment match rate</div><div class="v">${k.paymentMatchRate===null?'—':Math.round(k.paymentMatchRate*100)+'%'}</div></div>
+      <div class="kpi"><div class="l">WhatsApp delivery</div><div class="v">${k.whatsappDeliveryRate===null?'—':Math.round(k.whatsappDeliveryRate*100)+'%'}</div></div>
+      <div class="kpi"><div class="l">PDF success</div><div class="v">${k.pdfSuccessRate===null?'—':Math.round(k.pdfSuccessRate*100)+'%'}</div></div>
+      <div class="kpi"><div class="l">OCR auto-continue</div><div class="v">${k.ocr.autoContinueRate===null?'—':Math.round(k.ocr.autoContinueRate*100)+'%'}</div></div></div>
+      <div class="card"><h3>Weekly automation backlog (top exception causes)</h3>${bl.topCauses.length?'<table><tr><th>Type</th><th>Count</th></tr>'+bl.topCauses.map(c=>`<tr><td>${esc(c.type)}</td><td>${c.count}</td></tr>`).join('')+'</table>':'<p class="muted">No exceptions yet — run simulator scenarios or create bookings.</p>'}</div>
+      <div class="card"><h3>Providers</h3><pre>${esc(JSON.stringify(h.providers,null,1))}</pre></div>`;
+  }
+  if(TAB==='exceptions'){
+    const rows=await api('GET','/api/exceptions');
+    el.innerHTML=`<div class="hint">Automation-first: this queue is the only staff work surface. Resolving an exception resumes the booking automatically.</div>
+    <div class="card"><table><tr><th>Type</th><th>Booking</th><th>Customer</th><th>Role</th><th>SLA due</th><th>Root cause</th><th>Resolve</th></tr>
+    ${rows.map(e=>`<tr><td><span class="pill p-bad">${esc(e.type)}</span><br><span class="pill ${pill(e.status)}">${esc(e.status)}</span></td>
+      <td>${esc(e.bookingReference)}</td><td>${esc(e.customerName)}</td><td>${esc(e.routedRole)}</td>
+      <td class="muted">${esc((e.slaDueAt||'').slice(0,16).replace('T',' '))}</td><td class="muted">${esc(e.rootCause)}</td>
+      <td>${(e.suggestedActions||[]).map(a=>`<button class="act ${a.includes('cancel')||a.includes('reject')?'bad':'ok'}" onclick="resolveExc('${e.id}','${a}')">${esc(a.replaceAll('_',' '))}</button>`).join('')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Queue empty 🎉 — automation is handling everything.</td></tr>'}</table></div>`;
+  }
+  if(TAB==='bookings'){
+    const rows=await api('GET','/api/bookings');
+    el.innerHTML=`<div class="card"><table><tr><th>Ref</th><th>Customer</th><th>Service</th><th>Total</th><th>State</th><th></th></tr>
+    ${rows.map(b=>`<tr><td><b>${esc(b.reference)}</b><br><span class="muted">${esc(b.paymentReference||'')}</span></td><td>${esc(b.customerName)}</td><td>${esc(b.serviceType)}</td><td>${b.totalAmount} ${esc(b.currency)}</td><td><span class="pill ${spill(b.state)}">${esc(b.state)}</span></td><td><button class="act ghost" onclick="detail('${b.id}')">Open</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No live bookings yet. Use the Simulator tab, or POST /api/payments/incoming after creating bookings via the engine.</td></tr>'}</table></div><div id="detail"></div>`;
+  }
+  if(TAB==='automation'){
+    const rows=await api('GET','/api/automation');
+    el.innerHTML=`<div class="hint">A0 manual · A1 auto-prepared+approval · A2 auto with veto · A3 touchless. Permanent-A1 workflows cannot be raised (doc 13 §13.22). Kill switches stop an automation instantly — no redeploy.</div>
+    <div class="card"><table><tr><th>Workflow</th><th>Level</th><th>Thresholds hi/med</th><th>Kill switch</th></tr>
+    ${rows.map(s=>`<tr><td><b>${esc(s.workflowKey)}</b>${s.permanentA1?' <span class="pill p-warn">A1 locked</span>':''}</td>
+      <td><select onchange="setLevel('${s.workflowKey}',this.value)" ${s.permanentA1?'disabled':''}>${['A0','A1','A2','A3'].map(l=>`<option ${l===s.level?'selected':''}>${l}</option>`).join('')}</select></td>
+      <td class="muted">${s.thresholds.high} / ${s.thresholds.medium}</td>
+      <td>${s.killSwitchActive?`<span class="pill p-bad">OFF (killed)</span> <button class="act ok" onclick="kill('${s.workflowKey}',false)">Re-enable</button>`:`<span class="pill p-ok">running</span> <button class="act bad" onclick="kill('${s.workflowKey}',true)">KILL</button>`}</td></tr>`).join('')}</table></div>`;
+  }
+  if(TAB==='payments'){
+    const b=await api('GET','/api/payments/board');
+    const t=(title,rows)=>`<div class="card"><h3>${title} (${rows.length})</h3><table><tr><th>Reference</th><th>Expected</th><th>Received</th><th>Status</th><th>Suggested</th></tr>${rows.map(r=>`<tr><td><b>${esc(r.reference)}</b></td><td>${r.expectedAmount} ${esc(r.currency)}</td><td>${r.amountReceived??'—'}</td><td><span class="pill ${r.status==='matched'?'p-ok':'p-warn'}">${esc(r.status)}</span></td><td class="muted">${esc(r.suggestedAction||'')}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">none</td></tr>'}</table></div>`;
+    el.innerHTML=`<div class="hint">Simulate an incoming transfer: <input id="pref" placeholder="TRV-2026-000001" style="width:170px"> <input id="pamt" placeholder="amount" style="width:90px"> <button class="act" onclick="sendPay()">Process incoming payment</button></div>`+t('Waiting',b.waiting)+t('Unmatched / wrong amount',b.unmatched)+t('Matched',b.matched);
+  }
+  if(TAB==='ocr'){
+    const [ocr,visa]=await Promise.all([api('GET','/api/documents/ocr'),api('GET','/api/visa-applications')]);
+    el.innerHTML=`<div class="card"><h3>Passport OCR extractions</h3>${ocr.map(o=>`<pre>${esc(JSON.stringify({confidence:o.data.confidence,mrzOk:o.data.mrzChecksumOk,fields:o.data.fields},null,1))}</pre>`).join('')||'<p class="muted">none yet</p>'}</div>
+    <div class="card"><h3>Visa applications & readiness</h3>${visa.map(v=>`<p><b>${esc(v.country)} ${esc(v.visaType)}</b> — readiness <b>${v.readinessScore}%</b> · file: <span class="pill ${v.fileStatus==='approved_by_officer'?'p-ok':'p-warn'}">${esc(v.fileStatus)}</span></p><table><tr><th>Document</th><th>Status</th><th>Reason</th></tr>${v.checklist.map(c=>`<tr><td>${esc(c.label)}</td><td><span class="pill ${c.status.includes('accept')||c.status.includes('approved')?'p-ok':c.status==='missing'?'p-bad':'p-warn'}">${esc(c.status)}</span></td><td class="muted">${esc(c.reasonEn||'')}</td></tr>`).join('')}</table>`).join('')||'<p class="muted">none yet</p>'}</div>`;
+  }
+  if(TAB==='tickets'){
+    const rows=await api('GET','/api/support/tickets');
+    el.innerHTML=`<div class="hint">Full conversation view + booking context is in the <a href="/admin/support.html"><b>Support Console</b></a>. Bot escalations land here automatically.</div>
+    <div class="card"><table><tr><th>Number</th><th>Customer</th><th>Subject</th><th>Category</th><th>Priority</th><th>Status</th><th>Channel</th></tr>
+    ${rows.map(t=>`<tr><td><b>${esc(t.number)}</b></td><td>${esc(t.customerName)}</td><td>${esc(t.subject)}</td><td>${esc(t.category)}</td><td><span class="pill ${t.priority==='urgent'?'p-bad':'p-grey'}">${esc(t.priority)}</span></td><td><span class="pill ${t.status==='resolved'?'p-ok':'p-warn'}">${esc(t.status)}</span></td><td class="muted">${esc(t.channel)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">none</td></tr>'}</table></div>`;
+  }
+  if(TAB==='simulator'){
+    const names=['Successful automatic booking','Payment unmatched','Wrong payment amount','OCR low confidence','Passport expiry risk','Supplier error + failover','Supplier price change','Visa risk','Missing document → officer approval','Refund request','Medical case','Customer complaint','WhatsApp/PDF failure'];
+    el.innerHTML=`<div class="hint">Scenarios run against an isolated engine copy — they never touch live data. Each report shows states, exceptions, routing, SLA, resolution and final state (docs/14 §D).</div>
+    <div class="card">${names.map((n,i)=>`<button class="act" onclick="sim(${i+1})">${i+1}. ${n}</button>`).join('')} <button class="act bad" onclick="sim('all')">▶ Run ALL 13</button></div><div id="simout"></div>`;
+  }
+  if(TAB==='audit'){
+    const rows=await api('GET','/api/audit');
+    el.innerHTML=`<div class="card"><table><tr><th>At</th><th>Actor</th><th>Action</th><th>Booking</th><th>States</th><th>Conf.</th><th>Result</th></tr>
+    ${rows.map(a=>`<tr><td class="muted">${esc((a.at||'').slice(11,19))}</td><td><span class="pill p-blue">${esc(a.actorType)}</span></td><td>${esc(a.action)}</td><td class="muted">${esc((a.bookingId||'').slice(0,8))}</td><td class="muted">${a.fromState?esc(a.fromState)+'→'+esc(a.toState):''}</td><td>${a.confidence??''}</td><td class="muted">${esc(a.result||a.error||'')}</td></tr>`).join('')}</table></div>`;
+  }
+  }catch(e){el.innerHTML=`<div class="card" style="border-color:var(--bad)">Error: ${esc(e.message)}</div>`}
+}
+async function resolveExc(id,action){const note=prompt('Internal note (optional):')||undefined;try{const r=await api('POST',`/api/exceptions/${id}/resolve`,{action,note});alert('Resolved. Booking resumed to: '+r.bookingState);render()}catch(e){alert(e.message)}}
+async function setLevel(k,l){try{await api('PUT',`/api/automation/${k}/level`,{level:l})}catch(e){alert(e.message)}render()}
+async function kill(k,active){const reason=active?(prompt('Kill-switch reason:')||'manual'):'re-enabled';try{await api('PUT',`/api/automation/${k}/kill-switch`,{active,reason})}catch(e){alert(e.message)}render()}
+async function sendPay(){try{const r=await api('POST','/api/payments/incoming',{reference:$('#pref').value||undefined,amount:parseFloat($('#pamt').value||'0'),payerName:'Console test'});alert('Outcome: '+r.outcome)}catch(e){alert(e.message)}render()}
+async function detail(id){const d=await api('GET','/api/bookings/'+id);$('#detail').innerHTML=`<div class="card"><h3>${esc(d.booking.reference)} — ${esc(d.booking.state)}</h3><pre>${esc(JSON.stringify(d,null,1))}</pre></div>`}
+async function sim(n){$('#simout').innerHTML='<div class="card">Running…</div>';const r=await api('POST',n==='all'?'/api/simulator/run-all':'/api/simulator/run/'+n,{});const rep=x=>`<div class="card"><h3>${x.pass?'✅':'❌'} ${x.id}. ${esc(x.name)}</h3><p class="muted">${esc(x.expected)}</p><ul style="font-size:12.5px;padding-left:18px">${x.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ul><p style="margin-top:6px;font-size:12px"><b>States:</b> ${x.stateTimeline.map(esc).join(' → ')}</p>${x.exceptions.map(e=>`<p style="font-size:12px">⚡ ${esc(e.type)} → <b>${esc(e.routedRole)}</b> [${esc(e.status)}]</p>`).join('')}<p style="font-size:12px"><b>Final:</b> ${esc(x.finalState||'')} ${x.touchless!==undefined?'· touchless='+x.touchless:''}</p></div>`;
+$('#simout').innerHTML=r.reports?`<div class="card"><b>${r.passed}/13 passed</b></div>`+r.reports.map(rep).join(''):rep(r)}
+boot();
+</script>
+</body>
+</html>

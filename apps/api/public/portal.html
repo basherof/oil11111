@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>رحلتي — Rihlati</title>
+<style>
+:root{--navy:#0B2545;--navy7:#13315C;--royal:#1D4E89;--gold:#C9A227;--turq:#2EC4B6;--sand:#F7F5F0;--ink:#1A1D23;--ink5:#5B6472;--ok:#1E9E5A;--warn:#E0A100;--bad:#D64545;--line:#E7E3DA}
+*{box-sizing:border-box;margin:0;font-family:"IBM Plex Sans Arabic",Inter,"Segoe UI",system-ui,sans-serif}
+body{background:var(--sand);color:var(--ink);min-height:100vh}
+header{background:linear-gradient(120deg,var(--navy),var(--navy7));color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px}
+header .logo{font-size:20px;font-weight:800}header .logo i{color:var(--gold);font-style:normal}
+.mode{font-size:10.5px;font-weight:700;border-radius:99px;padding:3px 10px;background:#ffffff22}
+main{max-width:920px;margin:0 auto;padding:16px 14px 90px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(11,37,69,.05)}
+.btn{display:inline-block;border:none;cursor:pointer;background:var(--royal);color:#fff;border-radius:12px;padding:12px 18px;font-weight:700;font-size:14px;text-align:center}
+.btn.gld{background:var(--gold)}.btn.trq{background:var(--turq)}.btn.wa{background:#25D366}
+.btn.ghost{background:#fff;color:var(--royal);border:1.5px solid var(--royal)}
+.btn.blk{display:block;width:100%}
+.chip{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:4px 11px;margin:2px}
+.c-ok{background:#E6F6EE;color:var(--ok)}.c-warn{background:#FBF1D9;color:#8a6400}.c-bad{background:#FBE7E7;color:var(--bad)}.c-blue{background:#E8F0FB;color:var(--royal)}.c-turq{background:#E2F7F5;color:#0E8A7F}.c-gold{background:var(--gold);color:#fff}
+input,select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:14px;margin-bottom:10px;background:#fff}
+label{font-size:12px;color:var(--ink5);font-weight:700;display:block;margin-bottom:4px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 8px;text-align:center;cursor:pointer}
+.tile div{font-size:26px;margin-bottom:6px}.tile b{font-size:12.5px}
+.tile.on{border:2px solid var(--royal);background:#E8F0FB}
+nav.bottom{position:fixed;bottom:0;inset-inline:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px 12px;z-index:5}
+nav.bottom button{border:none;background:none;font-size:10.5px;color:var(--ink5);cursor:pointer;text-align:center;font-weight:700}
+nav.bottom button div{font-size:19px}nav.bottom button.on{color:var(--royal)}
+.muted{color:var(--ink5);font-size:12.5px}.b{font-weight:800}
+.price{color:var(--navy);font-weight:800;font-size:19px}
+h2{color:var(--navy);font-size:18px;margin-bottom:10px}h3{color:var(--navy);font-size:15px;margin-bottom:8px}
+.state{display:inline-block;font-size:11px;font-weight:800;border-radius:99px;padding:4px 12px}
+.timeline{border-inline-start:2px solid var(--line);margin-inline-start:8px;padding-inline-start:14px}
+.timeline p{font-size:12px;margin-bottom:8px;position:relative}
+.timeline p::before{content:'';width:9px;height:9px;border-radius:99px;background:var(--turq);position:absolute;inset-inline-start:-19.5px;top:4px}
+.bub{max-width:85%;border-radius:14px;padding:10px 13px;font-size:13px;margin-bottom:8px;line-height:1.6}
+.bub.ai{background:#fff;border:1px solid var(--line)}.bub.me{background:var(--royal);color:#fff;margin-inline-start:auto}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.opt{border:1.5px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
+.opt.rec{border-color:var(--gold)}
+.bar{height:8px;background:#EEE;border-radius:9px;overflow:hidden;margin:6px 0}.bar div{height:100%;background:var(--gold)}
+.notice{background:#E8F0FB;border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--royal);margin-bottom:10px}
+.warnbox{background:#FBF1D9;border:1.5px solid var(--warn);border-radius:12px;padding:10px;font-size:12.5px;color:#7a5900;margin-bottom:10px}
+@media(max-width:600px){.tiles{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">رحلتي<i>.</i></span>
+  <span class="mode" id="mode">…</span>
+  <span style="flex:1"></span>
+  <button class="btn ghost" style="padding:6px 12px;font-size:12px;background:#ffffff18;color:#fff;border-color:#ffffff55" onclick="toggleLang()" id="langbtn">EN</button>
+  <span id="who" style="font-size:12px;opacity:.85"></span>
+</header>
+<main id="main"></main>
+<nav class="bottom" id="nav" style="display:none">
+  <button data-v="home" class="on"><div>🏠</div><span data-i="nav_home"></span></button>
+  <button data-v="trips"><div>🧳</div><span data-i="nav_trips"></span></button>
+  <button data-v="planner"><div>🤖</div><span data-i="nav_ai"></span></button>
+  <button data-v="support"><div>💬</div><span data-i="nav_support"></span></button>
+</nav>
+<script>
+// ───────────────── i18n ─────────────────
+const I = {
+ ar:{dir:'rtl',nav_home:'الرئيسية',nav_trips:'رحلاتي',nav_ai:'المخطط الذكي',nav_support:'الدعم',
+  welcome:'أهلاً بك 👋',login_sub:'أدخل رقم هاتفك وسنرسل لك رمز التحقق (وضع تجريبي: الرمز 123456)',
+  phone:'رقم الهاتف',name:'الاسم الكامل',send_code:'أرسل رمز التحقق',code:'رمز التحقق',verify:'تأكيد ودخول',
+  services:'خدماتنا',svc_flight:'رحلات طيران',svc_hotel:'فنادق',svc_pkg:'باقات',svc_visa:'تأشيرات',svc_medical:'سفر علاجي',svc_esim:'eSIM',
+  new_booking:'حجز جديد',from:'من',to:'إلى',dates:'تاريخ العودة',pax:'المسافرون',budget:'الميزانية التقريبية (د.ل)',
+  start:'ابدأ الحجز — عرض سعر فوري',my_trips:'رحلاتي',no_trips:'لا رحلات بعد — ابدأ أول حجز من الرئيسية أو المخطط الذكي 🌍',
+  open:'فتح',state:'الحالة',quotation:'عرض السعر',ai_options:'خيارات الذكاء الاصطناعي',estimated:'سعر تقريبي',
+  scan:'📷 مسح جواز السفر (تعبئة تلقائية)',scan_done:'تم استخراج البيانات — راجعها وأكّدها',
+  confirm_details:'تأكيد البيانات ومتابعة الدفع',confirm_note:'راجع بياناتك كما في جواز السفر — هذا التأكيد يُسجّل رسمياً.',
+  pay_title:'الدفع بالتحويل المصرفي',pay_note:'حوّل المبلغ واكتب رقمك المرجعي في خانة الملاحظات، ثم أدخل المبلغ المحوّل هنا. المطابقة تتم تلقائياً.',
+  ref:'رقمك المرجعي',amount:'المبلغ المحوّل',paid:'✓ قمت بالتحويل',
+  wallet:'محفظة الرحلة (تعمل بدون إنترنت)',timeline:'مسار الحجز',refund:'طلب استرجاع',
+  visa_title:'طلب تأشيرة',visa_open:'ابدأ ملف تأشيرة شنغن',visa_ready:'جاهزية ملفك',upload:'رفع',
+  planner_hi:'أهلاً! أنا مساعد رحلتي الذكي 🤖 قل لي وين حاب تسافر، والميزانية، وعدد المسافرين — ونجهزلك ٣ خيارات فوراً.',
+  planner_ph:'مثال: نبي نسافر اسطنبول أسبوع بميزانية 5000 دينار',send:'إرسال',book_now:'احجز الآن',
+  support_hi:'كيف نقدر نساعدك؟ البوت يجاوب فوراً، واكتب «موظف» للتحويل للدعم البشري.',
+  my_tickets:'تذاكر الدعم',new_ticket:'تذكرة جديدة',subject:'الموضوع',details:'التفاصيل',create:'إنشاء',
+  logout:'خروج',pay_wrong:'المبلغ غير مطابق — سيراجعه فريق المالية ويتواصل معك',pay_pending:'استلمنا إشعار الدفع — بانتظار تأكيد المالية (خلال ساعة عمل)',pay_ok:'تم تأكيد الدفع تلقائياً! جاري إصدار التذاكر ✨',
+  per_family:'إجمالي',opt_eco:'اقتصادي',opt_std:'قياسي',opt_prm:'فاخر',recommended:'الأنسب ⭐',choose:'اختيار هذا الخيار'},
+ en:{dir:'ltr',nav_home:'Home',nav_trips:'My Trips',nav_ai:'AI Planner',nav_support:'Support',
+  welcome:'Welcome 👋',login_sub:'Enter your phone — we will send a verification code (mock mode: code is 123456)',
+  phone:'Phone number',name:'Full name',send_code:'Send code',code:'Verification code',verify:'Verify & sign in',
+  services:'Our services',svc_flight:'Flights',svc_hotel:'Hotels',svc_pkg:'Packages',svc_visa:'Visas',svc_medical:'Medical',svc_esim:'eSIM',
+  new_booking:'New booking',from:'From',to:'To',dates:'Return date',pax:'Travelers',budget:'Approx. budget (LYD)',
+  start:'Start booking — instant quote',my_trips:'My Trips',no_trips:'No trips yet — start from Home or the AI Planner 🌍',
+  open:'Open',state:'Status',quotation:'Quotation',ai_options:'AI options',estimated:'Estimated price',
+  scan:'📷 Scan passport (auto-fill)',scan_done:'Data extracted — review and confirm',
+  confirm_details:'Confirm details & continue to payment',confirm_note:'Review your details exactly as in the passport — this confirmation is officially recorded.',
+  pay_title:'Pay by bank transfer',pay_note:'Transfer the amount and write YOUR reference in the note, then enter the transferred amount here. Matching is automatic.',
+  ref:'Your reference',amount:'Transferred amount',paid:'✓ I have transferred',
+  wallet:'Trip Wallet (works offline)',timeline:'Booking timeline',refund:'Request refund',
+  visa_title:'Visa application',visa_open:'Start Schengen visa file',visa_ready:'File readiness',upload:'Upload',
+  planner_hi:"Hi! I'm the Rihlati AI assistant 🤖 Tell me where you want to travel, your budget, and travelers — I'll prepare 3 options instantly.",
+  planner_ph:'e.g. Istanbul for a week, budget 5000 LYD, family of 4',send:'Send',book_now:'Book now',
+  support_hi:'How can we help? The bot answers instantly — type "agent" for human support.',
+  my_tickets:'Support tickets',new_ticket:'New ticket',subject:'Subject',details:'Details',create:'Create',
+  logout:'Logout',pay_wrong:'Amount mismatch — finance will review and contact you',pay_pending:'Payment noted — awaiting finance confirmation (within 1 working hour)',pay_ok:'Payment auto-confirmed! Issuing your documents ✨',
+  per_family:'Total',opt_eco:'Economy',opt_std:'Standard',opt_prm:'Premium',recommended:'Recommended ⭐',choose:'Choose this option'}
+};
+let L=localStorage.getItem('lang')||'ar';
+const t=k=>I[L][k]||k;
+function applyLang(){document.documentElement.lang=L;document.documentElement.dir=I[L].dir;document.getElementById('langbtn').textContent=L==='ar'?'EN':'عربي';document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i))}
+function toggleLang(){L=L==='ar'?'en':'ar';localStorage.setItem('lang',L);applyLang();render()}
+// ───────────────── api ─────────────────
+let TOKEN=localStorage.getItem('ctoken')||'',USER=JSON.parse(localStorage.getItem('cuser')||'null'),VIEW='home';
+const api=async(m,p,b)=>{const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.message||r.status);return j};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=s=>document.querySelector(s);
+const stateChip=s=>{const ok=['confirmed','ticket_issued','voucher_issued','documents_generated','documents_delivered','pre_travel_reminders_active','completed','closed'].includes(s);const bad=s.startsWith('exc_')||['cancelled','failed'].includes(s);const cls=bad?'c-bad':ok?'c-ok':'c-blue';const ar={draft:'مسودة',ai_planned:'تم التخطيط',quotation_generated:'عرض سعر جاهز',awaiting_customer_confirmation:'بانتظار تأكيدك',awaiting_payment:'بانتظار الدفع',payment_received:'تم استلام الدفع',supplier_confirmation_pending:'جاري التأكيد',confirmed:'مؤكد',ticket_issued:'تم إصدار التذكرة',documents_generated:'المستندات جاهزة',documents_delivered:'تم التسليم',pre_travel_reminders_active:'جاهز للسفر ✈️',refunded:'تم الاسترجاع',cancelled:'ملغي'};const label=L==='ar'?(ar[s]||s.replaceAll('_',' ')):s.replaceAll('_',' ');return `<span class="state ${cls}">${esc(label)}</span>`};
+// ───────────────── views ─────────────────
+document.querySelectorAll('nav.bottom button').forEach(b=>b.onclick=()=>{VIEW=b.dataset.v;document.querySelectorAll('nav.bottom button').forEach(x=>x.classList.toggle('on',x===b));render()});
+async function boot(){const h=await api('GET','/health');$('#mode').textContent=(L==='ar'?'وضع تجريبي · ':'demo · ')+h.systemMode;applyLang();
+ if(!TOKEN){renderLogin();return}
+ $('#nav').style.display='flex';$('#who').textContent=USER?.name||'';render()}
+function renderLogin(){$('#main').innerHTML=`<div class="card" style="max-width:420px;margin:40px auto;text-align:center">
+ <div style="font-size:44px">✈️</div><h2>${t('welcome')}</h2><p class="muted" style="margin-bottom:14px">${t('login_sub')}</p>
+ <div style="text-align:start"><label>${t('name')}</label><input id="lname" value="فاطمة أحمد"><label>${t('phone')}</label><input id="lphone" dir="ltr" value="+218911234567">
+ <div id="codebox" style="display:none"><label>${t('code')}</label><input id="lcode" dir="ltr" placeholder="123456"></div></div>
+ <button class="btn blk" id="lbtn" onclick="otp()">${t('send_code')}</button></div>`}
+let otpSent=false;
+async function otp(){try{ if(!otpSent){await api('POST','/auth/otp/request',{phone:$('#lphone').value});otpSent=true;$('#codebox').style.display='block';$('#lbtn').textContent=t('verify');return}
+ const r=await api('POST','/auth/otp/verify',{phone:$('#lphone').value,code:$('#lcode').value,name:$('#lname').value});TOKEN=r.token;USER=r.user;localStorage.setItem('ctoken',TOKEN);localStorage.setItem('cuser',JSON.stringify(USER));boot()}catch(e){alert(e.message)}}
+async function render(){applyLang();const el=$('#main');
+ try{
+ if(VIEW==='home'){el.innerHTML=`
+  <div class="card" style="background:linear-gradient(120deg,var(--navy),#1d5e8c);color:#fff;border:none">
+   <h2 style="color:#fff">${L==='ar'?'رحلتك كاملة تبدأ من هنا':'Your whole trip starts here'}</h2>
+   <p style="font-size:13px;opacity:.85">${L==='ar'?'طيران · فنادق · تأشيرات · علاجي — بدفع محلي ودعم واتساب':'Flights · hotels · visas · medical — local payment & WhatsApp support'}</p></div>
+  <h3>${t('services')}</h3>
+  <div class="tiles" id="svc">
+   <div class="tile on" data-s="flight"><div>✈️</div><b>${t('svc_flight')}</b></div>
+   <div class="tile" data-s="hotel"><div>🏨</div><b>${t('svc_hotel')}</b></div>
+   <div class="tile" data-s="package"><div>🎒</div><b>${t('svc_pkg')}</b></div>
+   <div class="tile" data-s="visa"><div>🛂</div><b>${t('svc_visa')}</b></div>
+   <div class="tile" data-s="medical"><div>🏥</div><b>${t('svc_medical')}</b></div>
+   <div class="tile" data-s="esim"><div>📶</div><b>${t('svc_esim')}</b></div></div>
+  <div class="card" style="margin-top:12px"><h3>${t('new_booking')}</h3>
+   <div class="row"><div><label>${t('from')}</label><select id="bfrom"><option>Tripoli TIP</option><option>Benghazi BEN</option><option>Misrata MRA</option></select></div>
+   <div><label>${t('to')}</label><select id="bto"><option value="TR">Istanbul IST</option><option value="TN">Tunis TUN</option><option value="EG">Cairo CAI</option><option value="AE">Dubai DXB</option></select></div></div>
+   <div class="row"><div><label>${t('dates')}</label><input id="bret" type="date" value="2026-08-22"></div>
+   <div><label>${t('pax')}</label><select id="bpax"><option>1</option><option selected>2</option><option>4</option></select></div></div>
+   <label>${t('budget')}</label><input id="bbud" type="number" value="4860">
+   <button class="btn blk" onclick="createBooking()">${t('start')} ←</button></div>`;
+  document.querySelectorAll('#svc .tile').forEach(x=>x.onclick=()=>{document.querySelectorAll('#svc .tile').forEach(y=>y.classList.remove('on'));x.classList.add('on')});}
+ if(VIEW==='trips'){const rows=await api('GET','/customer/bookings');
+  el.innerHTML=`<h2>${t('my_trips')}</h2>`+(rows.length?rows.map(b=>`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+   <div><b>${b.serviceType==='hotel'?'🏨':b.serviceType==='medical'?'🏥':'✈️'} ${esc(b.details?.destination||b.serviceType)}</b><div class="muted">${esc(b.reference)} · ${b.totalAmount} ${esc(b.currency)}</div></div>
+   ${stateChip(b.state)}</div>
+   <button class="btn ghost" style="margin-top:8px" onclick="openTrip('${b.id}')">${t('open')}</button></div>`).join(''):`<div class="card muted">${t('no_trips')}</div>`)+`<div id="trip"></div>
+   <button class="btn ghost blk" onclick="localStorage.clear();location.reload()">${t('logout')}</button>`}
+ if(VIEW==='planner'){el.innerHTML=`<h2>🤖 ${t('nav_ai')}</h2><div class="card"><div id="pchat"><div class="bub ai">${t('planner_hi')}</div></div>
+  <div class="row"><input id="pmsg" placeholder="${t('planner_ph')}" style="margin:0"><button class="btn trq" style="flex:0 0 auto" onclick="plannerGo()">${t('send')}</button></div></div><div id="popts"></div>`}
+ if(VIEW==='support'){const tk=await api('GET','/customer/tickets');
+  el.innerHTML=`<h2>💬 ${t('nav_support')}</h2><div class="card"><div id="schat"><div class="bub ai">${t('support_hi')}</div></div>
+   <div class="row"><input id="smsg" style="margin:0" placeholder="…"><button class="btn" style="flex:0 0 auto" onclick="chatGo()">${t('send')}</button></div></div>
+   <div class="card"><h3>${t('my_tickets')}</h3>${tk.map(x=>`<p style="font-size:13px;margin-bottom:6px"><b>${esc(x.number)}</b> — ${esc(x.subject)} <span class="chip ${x.status==='resolved'||x.status==='closed'?'c-ok':'c-warn'}">${esc(x.status)}</span></p>`).join('')||`<p class="muted">—</p>`}
+   <label>${t('subject')}</label><input id="tsub"><label>${t('details')}</label><input id="tbody"><button class="btn blk ghost" onclick="newTicket()">${t('new_ticket')}</button></div>`}
+ }catch(e){el.innerHTML=`<div class="card" style="border-color:var(--bad)">${esc(e.message)}</div>`}}
+// ── booking flow ──
+async function createBooking(){const svc=document.querySelector('#svc .tile.on')?.dataset.s||'flight';
+ const to=$('#bto');const r=await api('POST','/customer/bookings',{serviceType:svc==='hotel'?'hotel':svc==='medical'?'medical':'flight',totalAmount:parseFloat($('#bbud').value||'4860'),details:{destination:to.options[to.selectedIndex].text,destinationCountry:to.value,from:$('#bfrom').value,returnDate:$('#bret').value,pax:$('#bpax').value,requestedService:svc}});
+ VIEW='trips';document.querySelectorAll('nav.bottom button').forEach(x=>x.classList.toggle('on',x.dataset.v==='trips'));await render();openTrip(r.booking.id)}
+async function openTrip(id){const d=await api('GET','/customer/bookings/'+id);const b=d.booking;let html=`<div class="card"><h3>${esc(b.reference)} — ${esc(b.details?.destination||'')}</h3><p style="margin-bottom:8px">${stateChip(b.state)} <span class="price">${b.totalAmount} ${esc(b.currency)}</span></p>`;
+ const q=d.quotations[0];
+ if(b.state==='awaiting_customer_confirmation'){
+  if(q)html+=`<div class="notice">📄 <b>${t('quotation')}:</b> ${esc(L==='ar'?q.bodyAr:q.bodyEn)}</div>`;
+  const opts=b.details?.aiPlan||[];
+  if(opts.length)html+=`<h3>${t('ai_options')}</h3>`+opts.map((o,i)=>`<div class="opt ${i===1?'rec':''}"><b>${t(i===0?'opt_eco':i===1?'opt_std':'opt_prm')}</b> ${i===1?`<span class="chip c-gold">${t('recommended')}</span>`:''}<div class="muted">✈️ ${esc(o.flightIdea)} · 🏨 ${esc(o.hotelIdea)}</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="chip c-warn">${t('estimated')}</span><span class="price">${Math.round(o.estTotal)} ${esc(o.currency)}</span></div></div>`).join('');
+  if(!b.passengers)html+=`<button class="btn trq blk" onclick="scanPassport('${b.id}')">${t('scan')}</button><div id="ocrout"></div>`;
+  else html+=confirmForm(b);
+ }
+ if(b.state==='awaiting_payment'){const ref=b.paymentReference||(d.paymentRefs[0]||{}).reference;
+  html+=`<div class="card" style="background:#E8F0FB;border:none"><h3>💳 ${t('pay_title')}</h3><p class="muted" style="margin-bottom:8px">${t('pay_note')}</p>
+  <p><b>${t('ref')}:</b> <span class="price" dir="ltr">${esc(ref)}</span></p><p class="muted" dir="ltr">Bank: Jumhouria Bank · IBAN LY83 002 (demo)</p>
+  <label style="margin-top:8px">${t('amount')}</label><input id="payamt" type="number" value="${b.totalAmount}"><button class="btn gld blk" onclick="payNow('${b.id}')">${t('paid')}</button></div>`}
+ if(d.wallet.length)html+=`<h3>🎫 ${t('wallet')}</h3>`+d.wallet.map(w=>`<p class="chip c-ok">📄 ${esc(w.itemType)} · offline ✓</p>`).join(' ');
+ if((d.visaApplications||[]).length){const v=d.visaApplications[0];html+=`<div class="card"><h3>🛂 ${t('visa_ready')}: ${v.readinessScore}%</h3><div class="bar"><div style="width:${v.readinessScore}%"></div></div>${v.checklist.map(c=>`<p style="font-size:12px;display:flex;justify-content:space-between"><span>${esc(c.label)}</span><span>${c.status==='missing'?`<button class="btn ghost" style="padding:3px 10px;font-size:11px" onclick="uploadDoc('${v.id}','${c.key}','${b.id}')">${t('upload')}</button>`:`<span class="chip ${['accepted_by_ai','approved_by_staff'].includes(c.status)?'c-ok':'c-warn'}">${esc(c.status)}</span>`}</span></p>`).join('')}</div>`}
+ else if(b.serviceType==='flight'&&!b.state.startsWith('exc'))html+=`<button class="btn ghost blk" style="margin-top:8px" onclick="openVisa('${b.id}')">🛂 ${t('visa_open')}</button>`;
+ html+=`<h3 style="margin-top:10px">${t('timeline')}</h3><div class="timeline">${d.timeline.map(h=>`<p><b>${esc(h.toState.replaceAll('_',' '))}</b> <span class="muted">· ${esc(h.actorType)} · ${esc((h.createdAt||'').slice(11,16))}</span></p>`).join('')}</div>`;
+ if(['pre_travel_reminders_active','confirmed','ticket_issued'].includes(b.state))html+=`<button class="btn ghost blk" style="border-color:var(--bad);color:var(--bad)" onclick="refund('${b.id}')">↩️ ${t('refund')}</button>`;
+ html+=`</div>`;$('#trip').innerHTML=html;$('#trip').scrollIntoView({behavior:'smooth'})}
+function confirmForm(b){const p=(b.passengers||[{}])[0];return `<div class="warnbox">🛂 ${t('confirm_note')}</div>
+ <div class="row"><div><label>Full name</label><input id="cf_name" dir="ltr" value="${esc(p.fullName||'')}"></div><div><label>Passport №</label><input id="cf_pass" dir="ltr" value="${esc(p.passportNumber||'')}"></div></div>
+ <div class="row"><div><label>DOB</label><input id="cf_dob" dir="ltr" value="${esc(p.dateOfBirth||'')}"></div><div><label>Expiry</label><input id="cf_exp" dir="ltr" value="${esc(p.expiryDate||'')}"></div></div>
+ <button class="btn blk" onclick="confirmDetails('${b.id}')">${t('confirm_details')} ←</button>`}
+async function scanPassport(id){const r=await api('POST',`/customer/bookings/${id}/scan-passport`,{});$('#ocrout').innerHTML=`<div class="notice">✅ ${t('scan_done')} (confidence ${r.result.confidence})</div>`;openTrip(id)}
+async function confirmDetails(id){await api('POST',`/customer/bookings/${id}/confirm`,{confirmedFields:{fullName:$('#cf_name').value,passportNumber:$('#cf_pass').value,dateOfBirth:$('#cf_dob').value,expiryDate:$('#cf_exp').value}});openTrip(id)}
+async function payNow(id){const r=await api('POST',`/customer/bookings/${id}/pay`,{amount:parseFloat($('#payamt').value)});alert(r.outcome==='auto_matched'?t('pay_ok'):r.outcome==='wrong_amount_exception'?t('pay_wrong'):t('pay_pending'));openTrip(id)}
+async function refund(id){await api('POST',`/customer/bookings/${id}/refund`,{reason:'customer request'});openTrip(id)}
+async function openVisa(id){await api('POST',`/customer/bookings/${id}/visa`,{country:'DE',visaType:'schengen'});openTrip(id)}
+async function uploadDoc(appId,key,bid){await api('POST',`/customer/visa/${appId}/upload`,{key});openTrip(bid)}
+// ── planner & support chat ──
+async function plannerGo(){const m=$('#pmsg').value;if(!m)return;$('#pchat').innerHTML+=`<div class="bub me">${esc(m)}</div>`;$('#pmsg').value='';
+ const budget=parseFloat((m.match(/\d{3,6}/)||[4860])[0]);
+ const r=await api('POST','/customer/bookings',{serviceType:'flight',totalAmount:budget,details:{destination:m.includes('تونس')||m.toLowerCase().includes('tunis')?'Tunis TUN':m.includes('دبي')||m.toLowerCase().includes('dubai')?'Dubai DXB':'Istanbul IST',destinationCountry:'TR',returnDate:'2026-08-22',prompt:m}});
+ const opts=r.booking.details?.aiPlan||[];
+ $('#pchat').innerHTML+=`<div class="bub ai">${L==='ar'?'جهزتلك ٣ خيارات ✨ (أسعار تقريبية — تتأكد في عرض السعر الرسمي)':'Here are 3 options ✨ (estimated — confirmed in the official quote)'}</div>`;
+ $('#popts').innerHTML=opts.map((o,i)=>`<div class="opt ${i===1?'rec':''}"><b>${t(i===0?'opt_eco':i===1?'opt_std':'opt_prm')}</b> ${i===1?`<span class="chip c-gold">${t('recommended')}</span>`:''}<div class="muted">✈️ ${esc(o.flightIdea)} · 🏨 ${esc(o.hotelIdea)}</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="chip c-warn">${t('estimated')}</span><span class="price">${Math.round(o.estTotal)} LYD</span></div><button class="btn blk" style="margin-top:6px" onclick="VIEW='trips';render().then(()=>openTrip('${r.booking.id}'))">${t('book_now')}</button></div>`).join('')}
+async function chatGo(){const m=$('#smsg').value;if(!m)return;$('#schat').innerHTML+=`<div class="bub me">${esc(m)}</div>`;$('#smsg').value='';
+ const r=await api('POST','/customer/chat',{message:m});$('#schat').innerHTML+=`<div class="bub ai">${esc(L==='ar'?r.replyAr:r.reply)}${r.escalated?' 👤':''}</div>`}
+async function newTicket(){await api('POST','/customer/tickets',{subject:$('#tsub').value||'—',body:$('#tbody').value||'',category:'general'});render()}
+boot();
+</script>
+</body>
+</html>

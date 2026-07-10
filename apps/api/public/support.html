@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rihlati — Support Console</title>
+<style>
+:root{--navy:#0B2545;--royal:#1D4E89;--gold:#C9A227;--turq:#2EC4B6;--sand:#F7F5F0;--ink:#1A1D23;--ink5:#5B6472;--ok:#1E9E5A;--warn:#E0A100;--bad:#D64545;--line:#E7E3DA}
+*{box-sizing:border-box;margin:0;font-family:Inter,"IBM Plex Sans Arabic",system-ui,sans-serif}
+body{background:var(--sand);color:var(--ink)}
+header{background:#0E3E38;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px}
+header b i{color:var(--turq);font-style:normal}
+main{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:16px;max-width:1300px;margin:0 auto;min-height:calc(100vh - 60px)}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;border-radius:99px;padding:3px 9px}
+.p-ok{background:#E6F6EE;color:var(--ok)}.p-warn{background:#FBF1D9;color:#8a6400}.p-bad{background:#FBE7E7;color:var(--bad)}.p-blue{background:#E8F0FB;color:var(--royal)}.p-grey{background:#EEE;color:var(--ink5)}
+.tk{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;cursor:pointer;font-size:12.5px}
+.tk:hover,.tk.on{border-color:var(--turq);background:#F3FBFA}
+button.act{background:var(--royal);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;margin:2px}
+button.act.ok{background:var(--ok)}button.act.ghost{background:#fff;color:var(--royal);border:1.5px solid var(--royal)}
+input,textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px}
+.muted{color:var(--ink5);font-size:12px}
+.msg{max-width:78%;border-radius:12px;padding:9px 12px;margin-bottom:8px;font-size:13px;line-height:1.55}
+.msg.customer{background:#fff;border:1px solid var(--line)}
+.msg.staff{background:#DCF3E4;margin-left:auto}
+.msg.bot{background:#E8F0FB;border:1px dashed var(--royal)}
+.msg.internal{background:#FBF1D9;margin-left:auto;font-style:italic}
+.chat{background:#FBFAF7;border:1px solid var(--line);border-radius:12px;padding:12px;max-height:420px;overflow-y:auto;margin-bottom:10px}
+h3{color:var(--navy);font-size:14px;margin-bottom:8px}
+#login{max-width:360px;margin:70px auto}
+pre{background:#F4F2EC;border-radius:8px;padding:8px;font-size:11px;overflow:auto;max-height:200px}
+@media(max-width:800px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><b>Rihlati<i>.</i> Support & Customer Care</b><span class="pill p-grey" id="mode">…</span><span style="flex:1"></span><span id="who" class="muted" style="color:#fff9"></span>
+<a href="/admin/admin.html" style="color:#fff9;font-size:12px">Ops console →</a></header>
+<div id="login" class="card"><h3>Support sign-in</h3>
+ <input id="email" value="support@rihlati.test" style="margin-bottom:8px"><input id="password" type="password" value="Support@12345" style="margin-bottom:8px">
+ <button class="act" style="width:100%" onclick="doLogin()">Login</button>
+ <p class="muted" style="margin-top:8px">Also works with any staff login (docs/14 §5).</p></div>
+<main id="main" style="display:none">
+ <section>
+  <div class="card"><h3>🎫 Ticket queue <button class="act ghost" style="float:right" onclick="load()">↻</button></h3>
+   <div id="filters" style="margin-bottom:8px">
+    <button class="act ghost" data-f="">All</button><button class="act ghost" data-f="open">Open</button>
+    <button class="act ghost" data-f="pending_staff">Pending staff</button><button class="act ghost" data-f="resolved">Resolved</button>
+   </div>
+   <div id="list"></div></div>
+ </section>
+ <section id="detail"><div class="card muted">Select a ticket — you'll see the conversation with full booking context (state, payments, exceptions, wallet) beside it.</div></section>
+</main>
+<script>
+let TOKEN=localStorage.getItem('stoken')||'',USER=JSON.parse(localStorage.getItem('suser')||'null'),FILTER='',CUR=null;
+const $=s=>document.querySelector(s);
+const api=async(m,p,b)=>{const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.message||r.status);return j};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const spill=s=>({open:'p-warn',pending_staff:'p-bad',pending_customer:'p-blue',resolved:'p-ok',closed:'p-grey'})[s]||'p-grey';
+async function doLogin(){try{const r=await api('POST','/auth/login',{email:$('#email').value,password:$('#password').value});TOKEN=r.token;USER=r.user;localStorage.setItem('stoken',TOKEN);localStorage.setItem('suser',JSON.stringify(USER));boot()}catch(e){alert(e.message)}}
+document.querySelectorAll('#filters button').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;load()});
+async function boot(){const h=await api('GET','/health');$('#mode').textContent=h.systemMode+' mode';if(!TOKEN)return;$('#login').style.display='none';$('#main').style.display='grid';$('#who').textContent=USER?`${USER.name} · ${USER.role}`:'';load()}
+async function load(){const rows=await api('GET','/api/support/tickets'+(FILTER?`?status=${FILTER}`:''));
+ $('#list').innerHTML=rows.map(t=>`<div class="tk ${CUR===t.id?'on':''}" onclick="open_('${t.id}')">
+  <b>${esc(t.number)}</b> <span class="pill ${spill(t.status)}">${esc(t.status)}</span> <span class="pill ${t.priority==='urgent'?'p-bad':'p-grey'}">${esc(t.priority)}</span><br>
+  ${esc(t.subject)}<br><span class="muted">${esc(t.customerName)} · ${esc(t.category)} · via ${esc(t.channel)}${t.bookingReference?' · '+esc(t.bookingReference):''}</span></div>`).join('')||'<p class="muted">Queue empty 🎉 — the bot is handling everything. Escalations appear here automatically.</p>';
+ if(CUR)open_(CUR,true)}
+async function open_(id,silent){CUR=id;if(!silent)document.querySelectorAll('.tk').forEach(x=>x.classList.remove('on'));
+ const d=await api('GET','/api/support/tickets/'+id);const t=d.ticket;
+ let ctx='';
+ if(d.bookingContext){const b=d.bookingContext.booking;
+  ctx=`<div class="card"><h3>🧾 Booking context — ${esc(b.reference)}</h3>
+   <p style="font-size:12.5px">State: <span class="pill ${b.state.startsWith('exc_')?'p-bad':'p-ok'}">${esc(b.state)}</span> · ${b.totalAmount} ${esc(b.currency)} · ${esc(b.serviceType)}</p>
+   <p class="muted">Payments: ${d.bookingContext.payments.map(p=>`${p.amount} (${p.status})`).join(', ')||'—'} · Wallet items: ${d.bookingContext.wallet.length}</p>
+   ${d.bookingContext.exceptions.filter(e=>e.status!=='resolved').map(e=>`<p class="pill p-bad">⚡ ${esc(e.type)} → ${esc(e.routedRole)}</p>`).join(' ')||''}
+  </div>`}
+ $('#detail').innerHTML=`<div class="card">
+  <h3>${esc(t.number)} — ${esc(t.subject)} <span class="pill ${spill(t.status)}">${esc(t.status)}</span></h3>
+  <p class="muted" style="margin-bottom:8px">${esc(t.customerName)} · ${esc(t.customerPhone||'')} · ${esc(t.category)} · priority ${esc(t.priority)}</p>
+  <div class="chat" id="chat">${d.messages.map(m=>`<div class="msg ${m.internal?'internal':esc(m.senderType)}">${esc(m.body)}<div class="muted" style="font-size:10px;margin-top:3px">${m.internal?'🔒 internal · ':''}${esc(m.senderType)} · ${esc((m.createdAt||'').slice(11,16))}</div></div>`).join('')||'<p class="muted">no messages</p>'}</div>
+  <textarea id="reply" rows="2" placeholder="Reply to customer… (sent via app + WhatsApp mock)"></textarea>
+  <div style="margin-top:8px">
+   <button class="act" onclick="send(false)">Send reply</button>
+   <button class="act ghost" onclick="send(true)">🔒 Internal note</button>
+   <button class="act ok" onclick="setSt('resolved')">Resolve</button>
+   <button class="act ghost" onclick="setSt('closed')">Close</button>
+  </div></div>`+ctx;
+ const c=$('#chat');c.scrollTop=c.scrollHeight}
+async function send(internal){const v=$('#reply').value;if(!v)return;await api('POST',`/api/support/tickets/${CUR}/reply`,{body:v,internal});open_(CUR,true)}
+async function setSt(status){await api('POST',`/api/support/tickets/${CUR}/status`,{status});load()}
+boot();
+</script>
+</body>
+</html>

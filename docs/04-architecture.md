@@ -1,0 +1,172 @@
+# 4 — System Architecture
+
+## 4.1 High-level architecture
+
+```mermaid
+flowchart TB
+    subgraph Clients
+        MA[Mobile App<br/>Flutter iOS+Android]
+        WEB[Website<br/>Next.js SSR]
+        ADMIN[Admin Dashboard<br/>React SPA]
+        AGENT[Agent Dashboard]
+        CORP[Corporate Dashboard]
+    end
+
+    subgraph Edge
+        GW[API Gateway / BFF<br/>REST + WebSocket<br/>rate limit · auth · i18n]
+    end
+
+    subgraph Core["Core Backend (NestJS modular monolith)"]
+        AUTHM[Auth & Identity<br/>OTP · JWT · 2FA · RBAC]
+        BOOK[Booking Engine<br/>unified booking + items + status machine]
+        AUTO[Automation Engine<br/>rules · timers · A0–A3 levels]
+        EXC[Exception Queue<br/>typed · routed · SLA-timed]
+        OCR[Document AI<br/>passport MRZ/OCR · classification · pre-check]
+        CAT[Catalog<br/>packages · destinations · exhibitions · visas]
+        PAY[Payments & Wallet<br/>ledger · invoices · receipts]
+        DOC[Documents<br/>upload · review states · secure storage]
+        CRM[CRM & Support<br/>tickets · live chat · WhatsApp threads]
+        NOTIF[Notifications<br/>push · email · WhatsApp · SMS]
+        LOY[Loyalty & Commissions]
+        RPT[Reporting & Export]
+        AI[AI Orchestrator<br/>assistant · trip builder · quotations]
+        PDF[PDF Service<br/>AR/EN branded documents]
+    end
+
+    subgraph Async
+        Q[(Job Queue<br/>BullMQ / Redis)]
+        SCHED[Scheduler<br/>reminders · expiry checks · invoices]
+    end
+
+    subgraph Data
+        PG[(PostgreSQL 16)]
+        REDIS[(Redis cache/sessions)]
+        S3[(S3-compatible object storage<br/>documents · PDFs · images)]
+        SEARCH[(Meilisearch<br/>AR/EN full-text)]
+    end
+
+    subgraph External
+        GDS[Flight APIs<br/>Duffel / Amadeus]
+        HOT[Hotel APIs<br/>RateHawk / Hotelbeds]
+        WA[WhatsApp Business API]
+        PAYGW[Local payment gateways<br/>Sadad · Moamalat · wallets]
+        ESIM[eSIM API<br/>Airalo / eSIM Go]
+        INS[Insurance partner API]
+        LLM[Claude API<br/>AI assistant models]
+        MAPS[Google Maps]
+        FX[Currency / Weather APIs]
+        MAIL[Email + SMS providers]
+    end
+
+    Clients --> GW --> Core
+    AUTO --> BOOK & PAY & NOTIF & PDF
+    AUTO -->|failure modes| EXC
+    OCR --> DOC & BOOK
+    Core <--> Q
+    SCHED --> Q
+    Core --> PG & REDIS & S3 & SEARCH
+    BOOK <--> GDS & HOT
+    PAY <--> PAYGW
+    NOTIF & CRM <--> WA
+    NOTIF --> MAIL
+    AI <--> LLM
+    CAT --> MAPS
+    BOOK --> ESIM & INS
+    Core --> FX
+```
+
+## 4.2 Key architectural decisions
+
+| Decision | Choice | Why |
+|---|---|---|
+| Backend shape | **Modular monolith** (NestJS), module-per-domain, extractable later | Small team, fast iteration, one deployment; clean module boundaries allow extracting AI/PDF/notifications into services when scale demands |
+| Booking model | **Unified `bookings` + polymorphic `booking_items`** | Flights, hotels, visas, eSIM, transfers, packages all share one lifecycle, one payment ledger, one PDF/notification pipeline |
+| Operating model | **Automation-first**: green path fully machine-driven; failures become typed exceptions | Staff work one Exception Queue instead of processing bookings; see [12-automation-first.md](12-automation-first.md) |
+| Fulfillment | **Supplier-adapter pattern** with health checks + failover chains | `ManualFulfillment` adapter is *exception-generating* in MVP; `DuffelAdapter`, `RateHawkAdapter`, `AiraloAdapter` plug into the same interface in Phase 2 — no dependency on a single supplier |
+| Status handling | **Explicit state machine** per booking item, transitions driven by `system` actor by default, with timers and audit trail | "Status is always visible/truthful" + automation demands guarded transitions, timeouts, and `status_history` |
+| Automation control | Declarative rules + per-workflow **A0–A3 levels stored as settings** | Ops can ratchet automation up (or hit kill switches) without deployments |
+| Document intake | Central **Document AI** service (MRZ/OCR, classification, visa pre-check) | One engine serves passenger forms, visa files, receipts, and WhatsApp media; confidence thresholds route to exceptions |
+| Money | **Double-entry ledger** (`ledger_entries`) for wallets, agent balances, commissions | Cash/transfer/wallet mixes and agent credit limits need auditable accounting from day one |
+| i18n | Locale in every content table (`_ar` / `_en` columns or translation table); ICU messages in clients | Arabic-first requirement; PDFs and WhatsApp templates also templated per locale |
+| Files | Pre-signed S3 URLs, private buckets, AV scan on upload | Passports and medical reports are highly sensitive |
+| Realtime | WebSocket (chat, booking status) + FCM push | Live chat + status updates |
+| AI | Dedicated orchestrator module with **tool-calling** into internal APIs (search, packages, visa KB, quotation) | The assistant must act, not just chat — and stay inside guardrails |
+
+## 4.3 Booking lifecycle state machine
+
+> **Authoritative expanded model:** [13-execution-plan-core-mvp.md §13.2](13-execution-plan-core-mvp.md) — 17 green-path states + 16 exception states + terminal states, with the full diagram.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> draft
+    draft --> ai_planned
+    ai_planned --> quotation_generated
+    quotation_generated --> awaiting_customer_confirmation
+    awaiting_customer_confirmation --> awaiting_payment: customer confirms details
+    awaiting_payment --> payment_received: auto-match / webhook
+    payment_received --> supplier_confirmation_pending
+    supplier_confirmation_pending --> confirmed
+    confirmed --> issued: ticket_issued / voucher_issued
+    issued --> documents_generated
+    documents_generated --> documents_delivered
+    documents_delivered --> pre_travel_reminders_active
+    pre_travel_reminders_active --> in_travel
+    in_travel --> completed
+    completed --> review_requested
+    review_requested --> closed
+    closed --> [*]
+    note right of awaiting_payment
+      Any state can branch to one of 16 typed
+      exception states (bound exception record
+      required); resolution resumes at the
+      stored resume_state. cancelled / refunded /
+      failed reachable per policy.
+    end note
+```
+
+Rules: transitions only via service layer (never raw updates); the default actor is **`system`** (automation engine, timers, webhooks); each transition writes `status_history` (who, when, note) and fires notification events. Timers: `pending_payment` auto-expires; `waiting_supplier` auto-escalates to a `supplier_error` exception; `confirmed → completed` at trip end. `requires_action` can only be entered with a bound exception record, and resolving that exception resumes the flow automatically.
+
+## 4.4 Request flow — automated green path (MVP)
+
+```mermaid
+sequenceDiagram
+    actor C as Customer (app)
+    participant API as Backend (automation engine)
+    participant SUP as Supplier adapter
+    participant EX as Exception queue
+    participant WA as WhatsApp API
+
+    C->>API: Flight search → select fare
+    API->>SUP: price(offer) — reprice
+    C->>API: Scan passports 📷 (OCR auto-fill) + confirm
+    API->>API: Expiry rule check ✓
+    API-->>C: Booking ref + unique payment reference
+    C->>API: Upload transfer receipt (or wallet/gateway)
+    API->>API: Receipt OCR → auto-match → hold → payment_received
+    API->>SUP: book() + issue()
+    SUP-->>API: PNR + tickets
+    API->>API: ticket_issued → branded PDF
+    par instant delivery
+        API->>C: Push + Trip Wallet (offline)
+        API->>WA: PDF ticket template
+        API->>C: Email
+    end
+    Note over API,EX: Any failing step → typed exception (payment_unmatched,<br/>supplier_error, ocr_low_confidence…) → routed to role, SLA-timed.
+```
+
+Zero staff touches on the green path. In MVP the `manual` supplier adapter fulfills `book()/issue()` by opening a fulfillment exception for staff — same interface, so switching to Duffel/RateHawk in Phase 2 is a feature-flag change. Full model: [12-automation-first.md](12-automation-first.md).
+
+## 4.5 AI orchestrator (summary — full design in [11-ai-assistant.md](11-ai-assistant.md))
+
+- Claude API with **tool use**: `search_flights`, `search_hotels`, `list_packages`, `get_visa_requirements`, `create_quotation_request`, `get_destination_guide`, `estimate_budget`.
+- RAG over internal knowledge base: visa requirements, FAQs, destination guides, policies (Meilisearch/pgvector).
+- Guardrails enforced server-side (not only in the prompt): price responses stamped "estimated" unless sourced from a live fare object; medical/visa answers append human-support handoff; PII never crosses user boundaries (tools are scoped to the authenticated user).
+
+## 4.6 Deployment & operations
+
+- **Runtime:** Docker on a managed VPS/cloud (Hetzner/AWS); staging + production; blue-green or rolling deploys via GitHub Actions CI/CD.
+- **Resilience for Libyan connectivity:** app-side request retry queues, small payloads, image CDN with aggressive caching, offline viewing of issued tickets/vouchers (stored locally in app).
+- **Backups:** PostgreSQL PITR (WAL archiving) + nightly snapshots; S3 versioning; quarterly restore drills.
+- **Observability:** structured logs, Sentry (clients + backend), uptime probes, queue depth alerts.
+- **Environments/config:** 12-factor, secrets in a vault, per-env feature flags (e.g., `flights.api_mode = manual|duffel`).
